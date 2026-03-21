@@ -1,5 +1,6 @@
 require('dotenv').config();
 const express = require('express');
+const path = require('path');
 const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
@@ -39,6 +40,16 @@ app.use('/api/analytics', require('./routes/analytics'));
 app.use('/api/users', require('./routes/users'));
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok', time: new Date() }));
+
+// Serving Static Assets in Production
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static(path.join(__dirname, '../frontend/build')));
+  
+  // For any route that is NOT /api, serve the index.html from React
+  app.get(/^(?!\/api).*/, (req, res) => {
+    res.sendFile(path.resolve(__dirname, '..', 'frontend', 'build', 'index.html'));
+  });
+}
 
 app.get('/', (req, res) => {
   res.send(`
