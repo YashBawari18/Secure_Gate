@@ -33,6 +33,16 @@ app.use('/api/users', require('./routes/users'));
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok', time: new Date() }));
 
+app.get('/', (req, res) => {
+  res.send(`
+    <div style="font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: #f8fafc; color: #1e293b;">
+      <h1 style="color: #4f46e9;">SecureGate API</h1>
+      <p style="font-weight: 500;">Status: <span style="color: #10b981;">Online</span></p>
+      <p style="font-size: 14px; color: #64748b;">Visit <a href="/api/health" style="color: #4f46e9;">/api/health</a> for system status.</p>
+    </div>
+  `);
+});
+
 // Socket.io
 io.on('connection', (socket) => {
   console.log('Client connected:', socket.id);
