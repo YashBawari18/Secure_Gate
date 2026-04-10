@@ -1,9 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { useTheme } from '../contexts/ThemeContext';
-import { useTranslation } from 'react-i18next';
-import i18n from '../i18n';
 import toast from 'react-hot-toast';
 
 /* ── Inline SVG icon ── */
@@ -14,58 +11,59 @@ const Ico = ({ d, size = 20 }) => (
   </svg>
 );
 
-const NAV = (t) => ({
+/* ── Nav definition per role ── */
+const NAV = {
   admin: [
     {
-      section: t('section.overview'),
+      section: 'Overview',
       items: [
-        { label: t('nav.dashboard'),  path: '/admin',            icon: 'M1 1h5v5H1zm8 0h5v5h-5zM1 9h5v5H1zm8 0h5v5h-5z' },
-        { label: t('nav.analytics'),  path: '/admin/analytics',  icon: 'M1 13L5 7l3 2 5-6' },
+        { label: 'Dashboard',   path: '/admin',            icon: 'M1 1h5v5H1zm8 0h5v5h-5zM1 9h5v5H1zm8 0h5v5h-5z' },
+        { label: 'Analytics',   path: '/admin/analytics',  icon: 'M1 13L5 7l3 2 5-6' },
       ],
     },
     {
-      section: t('section.security'),
+      section: 'Security',
       items: [
-        { label: t('nav.alerts'),      path: '/admin/alerts',     icon: 'M7.5 1L13.5 12H1.5L7.5 1zM7.5 5v3m0 2v.5', badge: 'alerts' },
-        { label: t('nav.visitorLog'),  path: '/admin/log',        icon: 'M2 1h11v13H2zM4 5h7M4 7.5h7M4 10h4' },
-        { label: t('nav.suspicious'),  path: '/admin/suspicious', icon: 'M7.5 1a6.5 6.5 0 100 13zm0-8v3.5m0 2v.5' },
-        { label: t('nav.faceVerify'),  path: '/admin/facecheck',  icon: 'M7.5 5a2.5 2.5 0 100 5zM1 13.5c0-2.5 3-4.5 6.5-4.5s6.5 2 6.5 4.5', isNew: true },
+        { label: 'Alerts',         path: '/admin/alerts',     icon: 'M7.5 1L13.5 12H1.5L7.5 1zM7.5 5v3m0 2v.5', badge: 'alerts' },
+        { label: 'Visitor log',    path: '/admin/log',        icon: 'M2 1h11v13H2zM4 5h7M4 7.5h7M4 10h4' },
+        { label: 'Suspicious',     path: '/admin/suspicious', icon: 'M7.5 1a6.5 6.5 0 100 13zm0-8v3.5m0 2v.5' },
+        { label: 'Face verify',    path: '/admin/facecheck',  icon: 'M7.5 5a2.5 2.5 0 100 5zM1 13.5c0-2.5 3-4.5 6.5-4.5s6.5 2 6.5 4.5', isNew: true },
       ],
     },
     {
-      section: t('section.manage'),
+      section: 'Manage',
       items: [
-        { label: t('nav.residents'),  path: '/admin/residents', icon: 'M1 14V7.5L7.5 2 14 7.5V14M5 10h5v4H5z' },
-        { label: t('nav.passes'),     path: '/admin/passes',    icon: 'M1 5h13v7H1zm0 2.5h13' },
-        { label: t('nav.watchlist'),  path: '/admin/watchlist', icon: 'M7.5 1a6.5 6.5 0 100 13 6.5 6.5 0 000-13zm0 0a6.5 6.5 0 010 13M7.5 5v.5m0 4v.5', isNew: true },
+        { label: 'Residents',  path: '/admin/residents', icon: 'M1 14V7.5L7.5 2 14 7.5V14M5 10h5v4H5z' },
+        { label: 'Passes',     path: '/admin/passes',    icon: 'M1 5h13v7H1zm0 2.5h13' },
+        { label: 'Watchlist',  path: '/admin/watchlist', icon: 'M7.5 1a6.5 6.5 0 100 13 6.5 6.5 0 000-13zm0 0a6.5 6.5 0 010 13M7.5 5v.5m0 4v.5', isNew: true },
       ],
     },
   ],
   guard: [
     {
-      section: t('section.gateOps'),
+      section: 'Gate operations',
       items: [
-        { label: t('nav.entryCheck'),    path: '/guard',           icon: 'M2 1h8l1 1v2l2 2v8H2zM10 4l2 2M5 8h5M5 10.5h3' },
-        { label: t('nav.todayLog'),      path: '/guard/log',       icon: 'M2 1h11v13H2zM4 5h7M4 7.5h7M4 10h4' },
-        { label: t('nav.alerts'),        path: '/guard/alerts',    icon: 'M7.5 1L13.5 12H1.5L7.5 1zM7.5 5v3m0 2v.5', badge: 'alerts' },
-        { label: t('nav.qrScanner'),     path: '/guard/scan',      icon: 'M1 1h5v5H1zm8 0h5v5h-5zM1 9h5v5H1zm8 0h2v2m2-2v2m-2 2h2m0-4h2' },
-        { label: t('nav.faceVerify'),    path: '/guard/facecheck', icon: 'M7.5 5a2.5 2.5 0 100 5zM1 13.5c0-2.5 3-4.5 6.5-4.5s6.5 2 6.5 4.5', isNew: true },
+        { label: 'Entry check',  path: '/guard',        icon: 'M2 1h8l1 1v2l2 2v8H2zM10 4l2 2M5 8h5M5 10.5h3' },
+        { label: "Today's log",  path: '/guard/log',    icon: 'M2 1h11v13H2zM4 5h7M4 7.5h7M4 10h4' },
+        { label: 'Alerts',       path: '/guard/alerts', icon: 'M7.5 1L13.5 12H1.5L7.5 1zM7.5 5v3m0 2v.5', badge: 'alerts' },
+        { label: 'QR scanner',   path: '/guard/scan',   icon: 'M1 1h5v5H1zm8 0h5v5h-5zM1 9h5v5H1zm8 0h2v2m2-2v2m-2 2h2m0-4h2' },
+        { label: 'Face verify',  path: '/guard/facecheck', icon: 'M7.5 5a2.5 2.5 0 100 5zM1 13.5c0-2.5 3-4.5 6.5-4.5s6.5 2 6.5 4.5', isNew: true },
       ],
     },
   ],
   resident: [
     {
-      section: t('section.myApartment'),
+      section: 'My apartment',
       items: [
-        { label: t('nav.approvals'),      path: '/resident',                 icon: 'M2 8l4 4 7-7', badge: 'approvals' },
-        { label: t('nav.inviteVisitor'),  path: '/resident/invite',          icon: 'M7.5 5a2.5 2.5 0 100 5zM1 13.5c0-2.5 3-4.5 6.5-4.5s6.5 2 6.5 4.5' },
-        { label: t('nav.visitHistory'),   path: '/resident/history',         icon: 'M7.5 1a6.5 6.5 0 100 13zm0-9v3.5l2.5 1.5' },
-        { label: t('nav.notifications'),  path: '/resident/notifications',   icon: 'M7.5 1.5a5 5 0 015 5v3l1.5 2.5H1L2.5 9.5v-3a5 5 0 015-5zM6 13a1.5 1.5 0 003 0', badge: 'notifs' },
-        { label: t('nav.trustScores'),    path: '/resident/trust',           icon: 'M7.5 1l2 4.5 5 .5-3.5 3.5 1 5L7.5 12 3 14.5l1-5L.5 6l5-.5z', isNew: true },
+        { label: 'Approvals',      path: '/resident',                  icon: 'M2 8l4 4 7-7', badge: 'approvals' },
+        { label: 'Invite visitor', path: '/resident/invite',           icon: 'M7.5 5a2.5 2.5 0 100 5zM1 13.5c0-2.5 3-4.5 6.5-4.5s6.5 2 6.5 4.5' },
+        { label: 'Visit history',  path: '/resident/history',          icon: 'M7.5 1a6.5 6.5 0 100 13zm0-9v3.5l2.5 1.5' },
+        { label: 'Notifications',  path: '/resident/notifications',    icon: 'M7.5 1.5a5 5 0 015 5v3l1.5 2.5H1L2.5 9.5v-3a5 5 0 015-5zM6 13a1.5 1.5 0 003 0', badge: 'notifs' },
+        { label: 'Trust scores',   path: '/resident/trust',            icon: 'M7.5 1l2 4.5 5 .5-3.5 3.5 1 5L7.5 12 3 14.5l1-5L.5 6l5-.5z', isNew: true },
       ],
     },
   ],
-});
+};
 
 const PAGE_TITLES = {
   '/admin': 'Security dashboard', '/admin/analytics': 'Visitor analytics',
@@ -83,31 +81,13 @@ const PAGE_TITLES = {
 
 export default function Layout({ children, alertCount = 0, approvalCount = 0 }) {
   const { user, logout } = useAuth();
-  const { theme, toggleTheme } = useTheme();
-  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
-  const [showLangMenu, setShowLangMenu] = useState(false);
-
-  const LANGS = [
-    { code: 'en', label: 'English', flag: '🇬🇧' },
-    { code: 'hi', label: 'हिंदी', flag: '🇮🇳' },
-    { code: 'mr', label: 'मराठी', flag: '🇮🇳' },
-    { code: 'gu', label: 'ગુજરાતી', flag: '🇮🇳' },
-  ];
-
-  const changeLang = (code) => {
-    i18n.changeLanguage(code);
-    localStorage.setItem('sg_lang', code);
-    setShowLangMenu(false);
-  };
-
-  const currentLang = LANGS.find(l => l.code === i18n.language) || LANGS[0];
 
   if (!user) return null;
 
   const initials = user.name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'U';
-  const navGroups = NAV(t)[user.role] || [];
+  const navGroups = NAV[user.role] || [];
   const pageTitle = PAGE_TITLES[location.pathname] || 'SecureGate';
 
   const getBadgeCount = (key) => {
@@ -204,38 +184,7 @@ export default function Layout({ children, alertCount = 0, approvalCount = 0 }) 
               {alertCount} alert{alertCount > 1 ? 's' : ''}
             </div>
           )}
-
-          {/* Language Switcher */}
-          <div style={{ position: 'relative' }}>
-            <button
-              onClick={() => setShowLangMenu(!showLangMenu)}
-              style={{ background: 'var(--bg3)', border: '1px solid var(--bdr)', borderRadius: 10, padding: '7px 12px', fontSize: 13, fontWeight: 600, cursor: 'pointer', color: 'var(--tx2)', display: 'flex', alignItems: 'center', gap: 6 }}
-            >
-              🌐 {currentLang.flag}
-            </button>
-            {showLangMenu && (
-              <div style={{ position: 'absolute', top: '110%', right: 0, background: 'var(--bg2)', border: '1px solid var(--bdr)', borderRadius: 12, boxShadow: 'var(--shadow-lg)', zIndex: 200, overflow: 'hidden', minWidth: 150 }}>
-                {LANGS.map(l => (
-                  <div key={l.code}
-                    onClick={() => changeLang(l.code)}
-                    style={{ padding: '10px 16px', fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, color: i18n.language === l.code ? 'var(--pri)' : 'var(--tx2)', fontWeight: i18n.language === l.code ? 700 : 500, background: i18n.language === l.code ? 'var(--pri-lt)' : 'transparent' }}
-                  >
-                    {l.flag} {l.label}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Dark / Light Toggle */}
-          <button
-            onClick={toggleTheme}
-            title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-            style={{ background: 'var(--bg3)', border: '1px solid var(--bdr)', borderRadius: 10, width: 38, height: 38, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, cursor: 'pointer' }}
-          >
-            {theme === 'dark' ? '☀️' : '🌙'}
-          </button>
-
+          
           {/* User pill for mobile/topbar */}
           <div className="mobile-only" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
              <div onClick={() => { logout(); toast.success('Signed out'); navigate('/login'); }} style={{ fontSize: 24, cursor: 'pointer' }}>👋</div>
