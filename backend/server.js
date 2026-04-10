@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const path = require('path');
 const http = require('http');
+const https = require('https');
 const { Server } = require('socket.io');
 const cors = require('cors');
 const morgan = require('morgan');
@@ -74,6 +75,15 @@ io.on('connection', (socket) => {
 
   socket.on('disconnect', () => console.log('Client disconnected:', socket.id));
 });
+
+// Render Auto-Ping Anti-Sleep Strategy
+setInterval(() => {
+  https.get('https://secure-gate-2.onrender.com/api/health', (res) => {
+    console.log(`[Anti-Sleep] Pinged self, status: ${res.statusCode}`);
+  }).on('error', (e) => {
+    console.error(`[Anti-Sleep] Error: ${e.message}`);
+  });
+}, 14 * 60 * 1000); // Ping every 14 mins
 
 const PORT = process.env.PORT || 5001; // Port 5001 avoids macOS Airplay conflict
 server.listen(PORT, () => console.log(`SecureGate server running on port ${PORT}`));

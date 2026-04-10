@@ -119,22 +119,23 @@ export default function AdminDashboard() {
         {/* Visitor type bars */}
         <div className="card">
           <div style={{ fontSize:13, fontWeight:500, marginBottom:14 }}>Visitor type breakdown</div>
-          {[
-            { label:'Guests',       pct:42, color:'var(--pri)'  },
-            { label:'Deliveries',   pct:31, color:'#7c3aed'    },
-            { label:'Maintenance',  pct:15, color:'var(--amb)'  },
-            { label:'Cabs / rides', pct: 8, color:'var(--grn)'  },
-            { label:'Unknown',      pct: 4, color:'var(--red)'  },
-          ].map(b => (
-            <div key={b.label} style={{ marginBottom:9 }}>
-              <div style={{ display:'flex', justifyContent:'space-between', fontSize:11, color:'var(--tx2)', marginBottom:4 }}>
-                <span>{b.label}</span><span style={{ fontFamily:'var(--mono)' }}>{b.pct}%</span>
+          {(stats?.byPurpose || []).length === 0 ? (
+            <div style={{ color:'var(--tx3)', fontSize:13, textAlign:'center', padding:'20px 0' }}>No data yet</div>
+          ) : (stats?.byPurpose || []).map(p => {
+            const purposeColors = { guest: 'var(--pri)', delivery: '#7c3aed', maintenance: 'var(--amb)', cab: 'var(--grn)', other: 'var(--red)' };
+            const tot = stats.byPurpose.reduce((sum, item) => sum + item.count, 0);
+            const pct = tot ? Math.round((p.count / tot) * 100) : 0;
+            return (
+              <div key={p._id} style={{ marginBottom:9 }}>
+                <div style={{ display:'flex', justifyContent:'space-between', fontSize:11, color:'var(--tx2)', marginBottom:4, textTransform:'capitalize' }}>
+                  <span>{p._id}</span><span style={{ fontFamily:'var(--mono)' }}>{pct}%</span>
+                </div>
+                <div style={{ height:6, background:'var(--bg3)', borderRadius:3, overflow:'hidden' }}>
+                  <div style={{ height:'100%', width:`${pct}%`, background:purposeColors[p._id] || 'var(--tx3)', borderRadius:3 }}/>
+                </div>
               </div>
-              <div style={{ height:6, background:'var(--bg3)', borderRadius:3, overflow:'hidden' }}>
-                <div style={{ height:'100%', width:`${b.pct}%`, background:b.color, borderRadius:3 }}/>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Recent alerts */}
