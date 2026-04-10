@@ -45,6 +45,36 @@
   --nav-h: 68px; /* For bottom nav and topbar */
 }
 
+/* ── Dark Mode ── */
+[data-theme="dark"] {
+  --bg: #0f1117;
+  --bg2: #1a1d27;
+  --bg3: #22263a;
+  --bg4: #2d3248;
+
+  --pri: #818cf8;
+  --pri-hover: #6366f1;
+  --pri-lt: rgba(129, 140, 248, 0.15);
+  --pri-dk: #312e81;
+
+  --grn: #34d399;
+  --grn-lt: rgba(52, 211, 153, 0.12);
+  --red: #f87171;
+  --red-lt: rgba(248, 113, 113, 0.12);
+  --amb: #fbbf24;
+  --amb-lt: rgba(251, 191, 36, 0.12);
+
+  --bdr: rgba(255,255,255,0.08);
+  --bdr2: rgba(255,255,255,0.15);
+  --tx: #f1f5f9;
+  --tx2: #cbd5e1;
+  --tx3: #64748b;
+
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
+  --shadow-md: 0 8px 20px rgba(0,0,0,0.3), 0 4px 10px rgba(0,0,0,0.2);
+  --shadow-lg: 0 16px 32px rgba(0,0,0,0.4), 0 6px 14px rgba(0,0,0,0.3);
+}
+
 /* Global Reset */
 html,body,#root{height:100%;}
 body{font-family:var(--font);font-size:15px;line-height:1.6;color:var(--tx);background:var(--bg);-webkit-font-smoothing:antialiased;}
