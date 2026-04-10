@@ -68,6 +68,7 @@ function AppRoutes() {
       <Route path="/guard/log"    element={<P roles={['guard']}><VisitorLog /></P>} />
       <Route path="/guard/alerts" element={<P roles={['guard']}><Alerts /></P>} />
       <Route path="/guard/scan"   element={<P roles={['guard']}><QRScanner /></P>} />
+      <Route path="/guard/facecheck" element={<P roles={['guard']}><FaceVerify /></P>} />
 
       {/* Resident */}
       <Route path="/resident"                   element={<P roles={['resident']}><ResidentApprovals /></P>} />

@@ -5,6 +5,7 @@
   "dependencies": {
     "@testing-library/jest-dom": "^5.16.5",
     "@testing-library/react": "^13.4.0",
+    "@vladmandic/face-api": "^1.7.15",
     "axios": "^1.4.0",
     "chart.js": "^4.3.3",
     "html5-qrcode": "^2.3.8",
@@ -14,6 +15,7 @@
     "react-hot-toast": "^2.4.1",
     "react-router-dom": "^6.14.1",
     "react-scripts": "5.0.1",
+    "react-webcam": "^7.2.0",
     "socket.io-client": "^4.6.1"
   },
   "scripts": {

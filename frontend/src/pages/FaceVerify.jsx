@@ -1,21 +1,101 @@
-import React, { useState } from 'react';
-
-const QUEUE = [
-  { id: 1, name: 'Arjun Kapoor',  flat: '6B', match: 96, status: 'match',   time: '11:02 AM', approved: true  },
-  { id: 2, name: 'Unknown male',  flat: '3D', match: 0,  status: 'no-match', time: '10:58 AM', approved: false },
-  { id: 3, name: 'Sunita Rao',    flat: '1C', match: 74, status: 'low',      time: '10:45 AM', approved: null  },
-];
+import React, { useState, useEffect, useRef } from 'react';
+import Webcam from 'react-webcam';
+import * as faceapi from '@vladmandic/face-api';
 
 export default function FaceVerify() {
-  const [queue, setQueue] = useState(QUEUE);
+  const [modelsLoaded, setModelsLoaded] = useState(false);
+  const [step, setStep] = useState(1); // 1: ID, 2: Live, 3: Result
+  const [idPhoto, setIdPhoto] = useState(null);
+  const [livePhoto, setLivePhoto] = useState(null);
+  const [matchScore, setMatchScore] = useState(null);
+  const [processing, setProcessing] = useState(false);
+  const webcamRef = useRef(null);
 
-  const decide = (id, allow) => {
-    setQueue(q => q.map(item => item.id === id ? { ...item, approved: allow, decided: true } : item));
+  useEffect(() => {
+    const loadModels = async () => {
+      try {
+        await Promise.all([
+          faceapi.nets.ssdMobilenetv1.loadFromUri('/models'),
+          faceapi.nets.faceLandmark68Net.loadFromUri('/models'),
+          faceapi.nets.faceRecognitionNet.loadFromUri('/models')
+        ]);
+        setModelsLoaded(true);
+      } catch (err) {
+        console.error("Failed to load models", err);
+      }
+    };
+    loadModels();
+  }, []);
+
+  const capture = (type) => {
+    const imageSrc = webcamRef.current?.getScreenshot();
+    if (!imageSrc) return;
+    if (type === 'id') {
+      setIdPhoto(imageSrc);
+      setStep(2);
+    } else {
+      setLivePhoto(imageSrc);
+      setStep(3);
+      compareFaces(idPhoto, imageSrc);
+    }
   };
 
-  const matchColor = m => m >= 85 ? 'var(--grn)' : m >= 70 ? 'var(--amb)' : 'var(--red)';
-  const matchBadge = m => m >= 85 ? 'green' : m >= 70 ? 'amber' : 'red';
-  const matchLabel = m => m >= 85 ? `Match ${m}%` : m === 0 ? 'No match' : `Low ${m}%`;
+  const fetchImage = async (base64) => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.src = base64;
+      img.onload = () => resolve(img);
+    });
+  };
+
+  const compareFaces = async (idSrc, liveSrc) => {
+    setProcessing(true);
+    try {
+      const idImg = await fetchImage(idSrc);
+      const liveImg = await fetchImage(liveSrc);
+
+      const idDetection = await faceapi.detectSingleFace(idImg).withFaceLandmarks().withFaceDescriptor();
+      const liveDetection = await faceapi.detectSingleFace(liveImg).withFaceLandmarks().withFaceDescriptor();
+
+      if (!idDetection) {
+        setMatchScore({ error: 'No face detected in the ID card photo. Please retake.' });
+        setProcessing(false);
+        return;
+      }
+      if (!liveDetection) {
+        setMatchScore({ error: 'No face detected in the Live photo. Please retake.' });
+        setProcessing(false);
+        return;
+      }
+
+      // 0.0 is an exact match. 0.6 is the default threshold.
+      const distance = faceapi.euclideanDistance(idDetection.descriptor, liveDetection.descriptor);
+      const isMatch = distance < 0.6;
+      
+      let pct;
+      if (isMatch) {
+         // Map 0.0-0.6 to 80%-100%
+         pct = Math.round((1 - (distance / 0.6) * 0.2) * 100);
+      } else {
+         // Map >0.6 to 0-60%
+         pct = Math.max(0, Math.round((1 - distance) * 100) - 20);
+      }
+
+      setMatchScore({ percent: pct, distance: distance.toFixed(2), isMatch });
+    } catch (err) {
+      console.error(err);
+      setMatchScore({ error: 'Computational error during face verification.' });
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const reset = () => {
+    setStep(1);
+    setIdPhoto(null);
+    setLivePhoto(null);
+    setMatchScore(null);
+  };
 
   return (
     <div className="fade-in">
@@ -23,77 +103,111 @@ export default function FaceVerify() {
         <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="#2563eb" strokeWidth="1.3">
           <circle cx="6.5" cy="6.5" r="5.5"/><line x1="6.5" y1="4.5" x2="6.5" y2="6.5"/><circle cx="6.5" cy="8.5" r=".5" fill="#2563eb"/>
         </svg>
-        AI compares live gate photos against resident-submitted visitor IDs. Mismatch triggers a security alert.
+        AI Face Verification: First, capture the visitor's physical ID card. Then, capture their live face.
       </div>
 
-      <div className="grid2" style={{ marginBottom: 20 }}>
-        {/* Verification queue */}
-        <div className="card">
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-            <div style={{ fontSize: 13, fontWeight: 500 }}>Verification queue</div>
-            <span className="badge badge-blue">{queue.filter(q => q.approved === null).length} pending</span>
-          </div>
-          {queue.map(v => (
-            <div key={v.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '11px 0', borderBottom: '1px solid var(--bdr)' }}>
-              <div className="avatar" style={{ width: 34, height: 34, fontSize: 12, background: v.match === 0 ? 'var(--red-lt)' : 'var(--bg3)', color: v.match === 0 ? 'var(--red)' : 'var(--tx2)' }}>
-                {v.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 13, fontWeight: 500 }}>{v.name}</div>
-                <div style={{ fontSize: 11, color: 'var(--tx3)' }}>Flat {v.flat} · {v.time}</div>
-              </div>
-              <span className={`badge badge-${matchBadge(v.match)}`}>{matchLabel(v.match)}</span>
-              {v.decided ? (
-                <span className={`badge badge-${v.approved ? 'green' : 'red'}`}>{v.approved ? 'Allowed' : 'Denied'}</span>
-              ) : (
-                <div style={{ display: 'flex', gap: 5 }}>
-                  <button className="btn btn-success btn-sm" onClick={() => decide(v.id, true)}>Allow</button>
-                  <button className="btn btn-danger btn-sm"  onClick={() => decide(v.id, false)}>Deny</button>
+      {!modelsLoaded ? (
+        <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+          <div className="spinner" style={{ margin: '0 auto 16px' }} />
+          <div style={{ color: 'var(--tx2)', fontSize: 14 }}>Loading AI Models... (this may take a moment)</div>
+        </div>
+      ) : (
+        <div className="grid2" style={{ gap: 24, alignItems: 'start' }}>
+          {/* Main camera/results area */}
+          <div className="card" style={{ padding: 24 }}>
+            {step === 1 && (
+              <div>
+                <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 12 }}>Step 1: Capture ID Card</div>
+                <div style={{ borderRadius: 12, overflow: 'hidden', marginBottom: 16, border: '2px solid var(--bdr)' }}>
+                  <Webcam audio={false} ref={webcamRef} screenshotFormat="image/jpeg" style={{ width: '100%', display: 'block' }} />
                 </div>
-              )}
-            </div>
-          ))}
-        </div>
+                <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: 12 }} onClick={() => capture('id')}>
+                  Capture ID Photo
+                </button>
+              </div>
+            )}
 
-        {/* Accuracy panel */}
-        <div className="card">
-          <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 16 }}>Accuracy this month</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginBottom: 18 }}>
-            {/* Ring */}
-            <div style={{ position: 'relative', width: 80, height: 80, flexShrink: 0 }}>
-              <svg width="80" height="80" viewBox="0 0 80 80" style={{ transform: 'rotate(-90deg)' }}>
-                <circle cx="40" cy="40" r="32" fill="none" stroke="var(--bg3)" strokeWidth="8"/>
-                <circle cx="40" cy="40" r="32" fill="none" stroke="var(--pri)" strokeWidth="8"
-                  strokeDasharray="201" strokeDashoffset="12" strokeLinecap="round"/>
-              </svg>
-              <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 600, fontFamily: 'var(--mono)', color: 'var(--pri)' }}>94%</div>
-            </div>
-            <div>
-              <div style={{ fontSize: 24, fontWeight: 600, fontFamily: 'var(--mono)', color: 'var(--tx)' }}>284</div>
-              <div style={{ fontSize: 12, color: 'var(--tx3)' }}>verifications run</div>
-              <div style={{ fontSize: 24, fontWeight: 600, fontFamily: 'var(--mono)', color: 'var(--grn)', marginTop: 8 }}>267</div>
-              <div style={{ fontSize: 12, color: 'var(--tx3)' }}>matched correctly</div>
-            </div>
+            {step === 2 && (
+              <div className="fade-in">
+                <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 12 }}>Step 2: Capture Live Face</div>
+                <div style={{ borderRadius: 12, overflow: 'hidden', marginBottom: 16, border: '2px solid var(--pri)' }}>
+                  <Webcam audio={false} ref={webcamRef} screenshotFormat="image/jpeg" style={{ width: '100%', display: 'block' }} />
+                </div>
+                <div style={{ display: 'flex', gap: 10 }}>
+                  <button className="btn btn-ghost" style={{ flex: 1, justifyContent: 'center', padding: 12 }} onClick={reset}>Go Back</button>
+                  <button className="btn btn-success" style={{ flex: 2, justifyContent: 'center', padding: 12 }} onClick={() => capture('live')}>
+                    Capture Live & Verify
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {step === 3 && (
+              <div className="fade-in" style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 20 }}>Verification Results</div>
+                {processing ? (
+                  <div style={{ padding: '40px 0' }}>
+                    <div className="spinner" style={{ margin: '0 auto 16px' }} />
+                    <div style={{ color: 'var(--tx2)' }}>Analyzing 128-point facial geometry...</div>
+                  </div>
+                ) : matchScore?.error ? (
+                  <div style={{ background: 'var(--red-lt)', color: '#b91c1c', padding: 16, borderRadius: 12, border: '1px solid #fca5a5' }}>
+                    <strong>Verification Failed</strong>
+                    <div style={{ marginTop: 8, fontSize: 13 }}>{matchScore.error}</div>
+                    <button className="btn btn-danger" style={{ marginTop: 16, padding: '8px 24px', margin: '16px auto 0' }} onClick={reset}>Try Again</button>
+                  </div>
+                ) : (
+                  <div>
+                    <div style={{ position: 'relative', width: 120, height: 120, margin: '0 auto 20px' }}>
+                      <svg width="120" height="120" viewBox="0 0 120 120" style={{ transform: 'rotate(-90deg)' }}>
+                        <circle cx="60" cy="60" r="54" fill="none" stroke="var(--bg3)" strokeWidth="12" />
+                        <circle cx="60" cy="60" r="54" fill="none" stroke={matchScore.isMatch ? 'var(--grn)' : 'var(--red)'} strokeWidth="12"
+                          strokeDasharray="339" strokeDashoffset={339 - (339 * matchScore.percent) / 100} strokeLinecap="round" style={{ transition: 'stroke-dashoffset 1s ease-out' }} />
+                      </svg>
+                      <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, fontWeight: 700, fontFamily: 'var(--mono)', color: matchScore.isMatch ? 'var(--grn)' : 'var(--red)' }}>
+                        {matchScore.percent}%
+                      </div>
+                    </div>
+                    
+                    {matchScore.isMatch ? (
+                      <div style={{ color: 'var(--grn)', fontWeight: 600, fontSize: 18 }}>Identity Verified</div>
+                    ) : (
+                      <div style={{ color: 'var(--red)', fontWeight: 600, fontSize: 18 }}>Mismatch Alert</div>
+                    )}
+                    <div style={{ fontSize: 13, color: 'var(--tx3)', marginTop: 4, marginBottom: 24 }}>System confidence (Euclidean dist: {matchScore.distance})</div>
+
+                    <button className="btn btn-primary" style={{ padding: '10px 32px' }} onClick={reset}>Verify Another Person</button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
-          {[
-            { label: 'True match (correct allow)',     pct: 79, color: 'var(--grn)' },
-            { label: 'Mismatch flagged',               pct: 15, color: 'var(--red)' },
-            { label: 'Low confidence (manual review)', pct: 6,  color: 'var(--amb)' },
-          ].map(r => (
-            <div key={r.label} style={{ marginBottom: 9 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--tx2)', marginBottom: 4 }}>
-                <span>{r.label}</span><span style={{ fontFamily: 'var(--mono)' }}>{r.pct}%</span>
+
+          {/* Reference Photos sidebar */}
+          <div className="card" style={{ padding: 16 }}>
+            <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 16, color: 'var(--tx2)' }}>Captured Reference</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--tx3)', textTransform: 'uppercase', marginBottom: 6 }}>1. ID Card / Baseline</div>
+                {idPhoto ? (
+                  <img src={idPhoto} alt="ID Reference" style={{ width: '100%', borderRadius: 8, border: '1px solid var(--bdr)', opacity: step===1?0.5:1 }} />
+                ) : (
+                  <div style={{ height: 120, background: 'var(--bg3)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--tx3)', fontSize: 12 }}>Waiting for capture...</div>
+                )}
               </div>
-              <div style={{ height: 5, background: 'var(--bg3)', borderRadius: 3 }}>
-                <div style={{ height: '100%', width: `${r.pct}%`, background: r.color, borderRadius: 3 }} />
+              
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--tx3)', textTransform: 'uppercase', marginBottom: 6 }}>2. Live Face</div>
+                {livePhoto ? (
+                  <img src={livePhoto} alt="Live Face" style={{ width: '100%', borderRadius: 8, border: '1px solid var(--bdr)' }} />
+                ) : (
+                  <div style={{ height: 120, background: 'var(--bg3)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--tx3)', fontSize: 12 }}>Waiting for capture...</div>
+                )}
               </div>
             </div>
-          ))}
-          <div style={{ marginTop: 14, padding: '10px 12px', background: 'var(--bg3)', borderRadius: 8, fontSize: 12, color: 'var(--tx2)' }}>
-            Integrate your CV model at <span style={{ fontFamily: 'var(--mono)', color: 'var(--pri)' }}>POST /api/visitors/face-check</span> to enable live matching.
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
