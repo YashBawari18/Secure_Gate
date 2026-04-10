@@ -7,14 +7,42 @@ export default function TrustScore() {
   const [loading, setLoading]   = useState(true);
 
   useEffect(() => {
-    visitorsAPI.getAll({ status: 'approved', limit: 50 })
+    // Fetch all history (no status limit) to calculate true reputation
+    visitorsAPI.getAll({ limit: 500 })
       .then(r => {
-        // Deduplicate by phone — show one card per unique visitor
         const map = {};
         r.data.visitors.forEach(v => {
-          if (!map[v.phone] || map[v.phone].trustScore < v.trustScore) map[v.phone] = v;
+          if (!map[v.phone]) {
+            map[v.phone] = {
+              ...v,
+              dynScore: 50, // Base Score
+              historyLog: [],
+            };
+          }
+          
+          const record = map[v.phone];
+          record.historyLog.push(v);
+
+          // Algorithm computation based on historical events
+          if (v.status === 'approved' || v.status === 'exited') record.dynScore += 5;
+          if (v.status === 'denied' || v.status === 'flagged') record.dynScore -= 15;
+          if (v.idVerified) record.dynScore += 15;
+          if (v.flagCount > 0) record.dynScore -= (v.flagCount * 20);
+
+          // Boundaries
+          if (record.dynScore > 100) record.dynScore = 100;
+          if (record.dynScore < 0) record.dynScore = 0;
+          
+          record.trustScore = record.dynScore; // Override the static database value
         });
-        setVisitors(Object.values(map));
+        
+        // Remove visitors that have zero approved visits (e.g. only pendings) to keep it clean
+        const validTrusts = Object.values(map).filter(v => 
+          v.historyLog.some(h => ['approved', 'exited', 'denied', 'flagged'].includes(h.status))
+        );
+        
+        // Sort highest trust first
+        setVisitors(validTrusts.sort((a,b) => b.trustScore - a.trustScore));
       })
       .catch(() => toast.error('Failed to load visitor scores'))
       .finally(() => setLoading(false));

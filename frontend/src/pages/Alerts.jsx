@@ -1,14 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import { alertsAPI } from '../utils/api';
 import { useSocket } from '../hooks/useSocket';
+import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
 
 const SEV_BORDER = { high:'var(--red)', medium:'var(--amb)', low:'var(--pri)' };
 const SEV_COLOR  = { high:'red',        medium:'amber',      low:'blue'       };
 
 export default function Alerts() {
+  const { user } = useAuth();
   const [alerts,  setAlerts]  = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({ title: '', severity: 'medium', description: '', flatNumber: '', type: 'other' });
 
   const load = async () => {
     setLoading(true);
@@ -28,14 +32,64 @@ export default function Alerts() {
   const dismiss  = async (id) => { try { await alertsAPI.dismiss(id);  toast.success('Alert dismissed');  load(); } catch { toast.error('Failed'); } };
   const escalate = async (id) => { try { await alertsAPI.escalate(id); toast.success('Alert escalated'); load(); } catch { toast.error('Failed'); } };
 
+  const handleAlertSubmit = async (e) => {
+    e.preventDefault();
+    if (!form.title || !form.description) return toast.error('Title and description are required');
+    try {
+      await alertsAPI.create(form);
+      toast.success('Alert broadcasted securely!');
+      setShowForm(false);
+      setForm({ title: '', severity: 'medium', description: '', flatNumber: '', type: 'other' });
+      load();
+    } catch (err) { toast.error(err.response?.data?.message || 'Failed to dispatch alert'); }
+  };
+
   return (
     <div className="fade-in">
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16 }}>
         <div style={{ fontSize:13, color:'var(--tx2)' }}>
           {loading ? '—' : alerts.length} active alert{alerts.length !== 1 ? 's' : ''}
         </div>
-        <button className="btn btn-ghost btn-sm" onClick={load}>Refresh</button>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button className="btn btn-ghost btn-sm" onClick={load}>Refresh</button>
+          {(user?.role === 'admin' || user?.role === 'guard') && (
+            <button className="btn btn-primary btn-sm" onClick={() => setShowForm(!showForm)}>
+              {showForm ? 'Cancel' : '+ Raise New Alert'}
+            </button>
+          )}
+        </div>
       </div>
+
+      {showForm && (
+        <div className="card fade-in" style={{ marginBottom: 16 }}>
+          <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 14, color: 'var(--red)' }}>Manually Broadcast Threat Alert</div>
+          <form onSubmit={handleAlertSubmit}>
+            <div className="grid2" style={{ marginBottom: 16 }}>
+              <div className="form-group">
+                <label className="form-label">Threat Title *</label>
+                <input className="form-input" value={form.title} onChange={e => setForm(f => ({...f, title: e.target.value}))} placeholder="e.g. Broken Gate Sensor" />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Severity Level</label>
+                <select className="form-input" value={form.severity} onChange={e => setForm(f => ({...f, severity: e.target.value}))}>
+                  <option value="low">Low (Notice)</option>
+                  <option value="medium">Medium (Warning)</option>
+                  <option value="high">High (Critical Threat)</option>
+                </select>
+              </div>
+              <div className="form-group" style={{ gridColumn: '1 / -1', marginBottom: 0 }}>
+                <label className="form-label">Description *</label>
+                <textarea className="form-input" style={{ minHeight: 80, resize: 'vertical' }} value={form.description} onChange={e => setForm(f => ({...f, description: e.target.value}))} placeholder="Provide details securely..." />
+              </div>
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label className="form-label">Affected Flat (Optional)</label>
+                <input className="form-input" value={form.flatNumber} onChange={e => setForm(f => ({...f, flatNumber: e.target.value}))} placeholder="e.g. 104B" />
+              </div>
+            </div>
+            <button type="submit" className="btn btn-danger btn-sm">Broadcast to All Stations</button>
+          </form>
+        </div>
+      )}
 
       {loading ? (
         <div style={{ textAlign:'center', padding:48 }}><div className="spinner" style={{ margin:'0 auto' }}/></div>
