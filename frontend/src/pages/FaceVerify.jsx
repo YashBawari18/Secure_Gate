@@ -119,7 +119,7 @@ export default function FaceVerify() {
               <div>
                 <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 12 }}>Step 1: Capture ID Card</div>
                 <div style={{ borderRadius: 12, overflow: 'hidden', marginBottom: 16, border: '2px solid var(--bdr)' }}>
-                  <Webcam audio={false} ref={webcamRef} screenshotFormat="image/jpeg" style={{ width: '100%', display: 'block' }} />
+                  <Webcam audio={false} ref={webcamRef} screenshotFormat="image/jpeg" videoConstraints={{ facingMode: 'environment' }} style={{ width: '100%', display: 'block' }} />
                 </div>
                 <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: 12 }} onClick={() => capture('id')}>
                   Capture ID Photo
@@ -131,7 +131,7 @@ export default function FaceVerify() {
               <div className="fade-in">
                 <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 12 }}>Step 2: Capture Live Face</div>
                 <div style={{ borderRadius: 12, overflow: 'hidden', marginBottom: 16, border: '2px solid var(--pri)' }}>
-                  <Webcam audio={false} ref={webcamRef} screenshotFormat="image/jpeg" style={{ width: '100%', display: 'block' }} />
+                  <Webcam audio={false} ref={webcamRef} screenshotFormat="image/jpeg" videoConstraints={{ facingMode: 'environment' }} style={{ width: '100%', display: 'block' }} />
                 </div>
                 <div style={{ display: 'flex', gap: 10 }}>
                   <button className="btn btn-ghost" style={{ flex: 1, justifyContent: 'center', padding: 12 }} onClick={reset}>Go Back</button>
