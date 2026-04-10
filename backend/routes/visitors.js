@@ -18,7 +18,7 @@ router.get('/', protect, async (req, res) => {
     if (req.user.role === 'resident') filter.flatNumber = req.user.flatNumber;
     if (status) filter.status = status;
     if (purpose) filter.purpose = purpose;
-    if (flatNumber && req.user.role !== 'resident') filter.flatNumber = flatNumber;
+    if (flatNumber && req.user.role !== 'resident') filter.flatNumber = { $regex: new RegExp(`^${flatNumber}$`, 'i') };
     if (search) filter.$or = [
       { name: { $regex: search, $options: 'i' } },
       { phone: { $regex: search, $options: 'i' } },
@@ -50,9 +50,15 @@ router.post('/', protect, authorize('guard', 'admin', 'resident'), async (req, r
     if (req.user.role === 'resident') {
       req.body.flatNumber = req.user.flatNumber;
     }
-    const { name, phone, purpose, flatNumber, entryMethod, passType, validDate, notes } = req.body;
+    let { name, phone, purpose, flatNumber, entryMethod, passType, validDate, notes } = req.body;
+    if (flatNumber) flatNumber = flatNumber.toUpperCase().trim();
 
-    const resident = await User.findOne({ flatNumber, role: 'resident' });
+    const resident = await User.findOne({ 
+      flatNumber: { $regex: new RegExp(`^${flatNumber}$`, 'i') }, 
+      role: 'resident' 
+    });
+
+    if (resident) flatNumber = resident.flatNumber; // Normalize to match the database exactly
     const otp = generateOTP();
     const otpExpiry = new Date(Date.now() + (process.env.OTP_EXPIRY_MINUTES || 30) * 60 * 1000);
 

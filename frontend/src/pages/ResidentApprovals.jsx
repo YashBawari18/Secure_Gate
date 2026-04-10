@@ -37,8 +37,9 @@ export default function ResidentApprovals() {
   const approve = async (id, name) => {
     setActing(a => ({...a, [id]:'approving'}));
     try {
-      await visitorsAPI.approve(id);
-      toast.success(`${name} approved — OTP sent!`);
+      const resp = await visitorsAPI.approve(id);
+      const testOtp = resp.data?.visitor?.otp || '';
+      toast.success(`${name} approved — OTP: ${testOtp}`, { duration: 5000 });
       load();
     } catch (err) { toast.error(err.response?.data?.message || 'Failed to approve'); }
     finally { setActing(a => ({...a, [id]:null})); }
@@ -121,7 +122,7 @@ export default function ResidentApprovals() {
                 <button className="btn btn-danger" disabled={isActing} onClick={()=>deny(v._id, v.name)}>
                   {acting[v._id]==='denying' ? 'Denying...' : 'Deny entry'}
                 </button>
-                <button className="btn btn-ghost">Call visitor</button>
+                <a href={`tel:${v.phone}`} className="btn btn-ghost" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Call visitor</a>
               </div>
             </div>
           );

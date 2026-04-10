@@ -6,7 +6,7 @@ import Scanner from '../components/Scanner';
 
 export default function GuardEntry() {
   const { user } = useAuth();
-  const [form, setForm] = useState({ name:'', phone:'', flatNumber:'', purpose:'guest', entryMethod:'manual' });
+  const [form, setForm] = useState({ name:'', phone:'', flatNumber:'', purpose:'guest', entryMethod:'otp' });
   const [loading,  setLoading]  = useState(false);
   const [created,  setCreated]  = useState(null);
   const [otp,      setOtp]      = useState(['','','','']);
@@ -33,7 +33,7 @@ export default function GuardEntry() {
       setCreated(r.data.visitor);
       setRecent(prev => [r.data.visitor, ...prev].slice(0,5));
       toast.success('Entry created — notifying resident...');
-      setForm({ name:'', phone:'', flatNumber:'', purpose:'guest', entryMethod:'manual' });
+      setForm({ name:'', phone:'', flatNumber:'', purpose:'guest', entryMethod:'otp' });
     } catch (err) { toast.error(err.response?.data?.message || 'Failed to create entry'); }
     finally { setLoading(false); }
   };
@@ -111,9 +111,7 @@ export default function GuardEntry() {
                 <div>
                   <label className="form-label">Pass type</label>
                   <select className="form-input" value={form.entryMethod} onChange={e=>upd('entryMethod',e.target.value)}>
-                    <option value="manual">Manual</option>
                     <option value="otp">OTP</option>
-                    <option value="qr">QR</option>
                   </select>
                 </div>
               </div>
@@ -143,38 +141,6 @@ export default function GuardEntry() {
 
         {/* ── Verification + Gate log ── */}
         <div>
-          {/* OTP verify */}
-          <div className="card" style={{ marginBottom:14 }}>
-            <div style={{ fontSize:13, fontWeight:500, marginBottom:14 }}>Verify OTP</div>
-            <div style={{ display:'flex', gap:8, marginBottom:14 }}>
-              {otp.map((d,i) => (
-                <input key={i} maxLength={1} value={d}
-                  onChange={e=>{ updateOtp(e.target.value,i); focusOtp(e,i); }}
-                  onKeyDown={e=>{ if(e.key==='Backspace'&&!d&&i>0) e.target.parentElement.children[i-1]?.focus(); }}
-                  style={{ width:46, height:52, textAlign:'center', fontSize:24, fontWeight:600, fontFamily:'var(--mono)', background: d?'var(--pri-lt)':'var(--bg3)', border:`1.5px solid ${d?'var(--pri)':'var(--bdr2)'}`, borderRadius:9, color:'var(--pri)', outline:'none', transition:'all .15s' }}
-                />
-              ))}
-            </div>
-            <div className="form-group">
-              <label className="form-label">Visitor phone (for OTP lookup)</label>
-              <input className="form-input" value={otpPhone} onChange={e=>setOtpPhone(e.target.value)} placeholder="Phone number used at entry"/>
-            </div>
-            <button className="btn btn-success" style={{ width:'100%', justifyContent:'center', padding:9 }}
-              onClick={verifyOTP} disabled={verifying || otp.join('').length<4}>
-              {verifying ? 'Verifying...' : 'Verify OTP & allow entry'}
-            </button>
-          </div>
-
-          {/* QR verify */}
-          <div className="card" style={{ marginBottom:14 }}>
-            <div style={{ fontSize:13, fontWeight:500, marginBottom:12 }}>Verify QR pass</div>
-            <Scanner onScan={(text) => setQrToken(text)} />
-            <input className="form-input" value={qrToken} onChange={e=>setQrToken(e.target.value)} placeholder="Or paste QR token manually" style={{ marginBottom:10 }}/>
-            <button className="btn btn-success" style={{ width:'100%', justifyContent:'center', padding:9 }}
-              onClick={verifyQR} disabled={verifying || !qrToken}>
-              {verifying ? 'Verifying...' : 'Verify QR & allow entry'}
-            </button>
-          </div>
 
           {/* Recent entries timeline */}
           {recent.length > 0 && (
