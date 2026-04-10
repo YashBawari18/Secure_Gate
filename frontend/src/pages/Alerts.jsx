@@ -133,7 +133,17 @@ export default function Alerts() {
                 </div>
                 <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
                   {a.severity === 'high' && (
-                    <button className="btn btn-danger btn-sm" onClick={() => escalate(a._id)}>Escalate to police</button>
+                    <a
+                      href="tel:112"
+                      className="btn btn-danger btn-sm"
+                      style={{ textDecoration: 'none' }}
+                      onClick={(e) => {
+                        // Also mark as escalated in the system
+                        escalate(a._id);
+                      }}
+                    >
+                      🚨 Call Emergency (112)
+                    </a>
                   )}
                   <button className="btn btn-ghost btn-sm" onClick={() => dismiss(a._id)}>Dismiss</button>
                 </div>

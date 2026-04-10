@@ -17,6 +17,14 @@ export default function Watchlist() {
 
   useEffect(() => { load(); }, []);
 
+  const handleToggleWatchlist = async (id, currentlyWatchlisted) => {
+    try {
+      await visitorsAPI.watchlist(id);
+      toast.success(currentlyWatchlisted ? 'Removed from watchlist' : 'Added to watchlist');
+      load();
+    } catch { toast.error('Failed to update watchlist'); }
+  };
+
   return (
     <div className="fade-in">
       <div className="info-box" style={{ marginBottom: 16 }}>
@@ -49,7 +57,7 @@ export default function Watchlist() {
         ) : (
           <table className="data-table">
             <thead>
-              <tr><th>Visitor</th><th>Phone</th><th>Added</th><th>Flag count</th><th>Reason</th><th>Risk</th></tr>
+              <tr><th>Visitor</th><th>Phone</th><th>Added</th><th>Flag count</th><th>Reason</th><th>Risk</th><th>Action</th></tr>
             </thead>
             <tbody>
               {visitors.length === 0 ? (
@@ -78,6 +86,14 @@ export default function Watchlist() {
                     <span className={`badge badge-${v.flagCount >= 3 ? 'red' : 'amber'}`}>
                       {v.flagCount >= 3 ? 'High' : 'Medium'}
                     </span>
+                  </td>
+                  <td>
+                    <button
+                      className={`btn btn-sm ${v.isWatchlisted ? 'btn-danger' : 'btn-success'}`}
+                      onClick={() => handleToggleWatchlist(v._id, v.isWatchlisted)}
+                    >
+                      {v.isWatchlisted ? 'Remove' : '+ Watch'}
+                    </button>
                   </td>
                 </tr>
               ))}

@@ -228,11 +228,14 @@ router.patch('/:id/exit', protect, authorize('guard', 'admin'), async (req, res)
   }
 });
 
-// PATCH /api/visitors/:id/watchlist
+// PATCH /api/visitors/:id/watchlist - toggle watchlist
 router.patch('/:id/watchlist', protect, authorize('admin'), async (req, res) => {
   try {
-    const visitor = await Visitor.findByIdAndUpdate(req.params.id, { isWatchlisted: true }, { new: true });
-    res.json({ success: true, visitor });
+    const visitor = await Visitor.findById(req.params.id);
+    if (!visitor) return res.status(404).json({ success: false, message: 'Not found' });
+    visitor.isWatchlisted = !visitor.isWatchlisted;
+    await visitor.save();
+    res.json({ success: true, visitor, watchlisted: visitor.isWatchlisted });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
