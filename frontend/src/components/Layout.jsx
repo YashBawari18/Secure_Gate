@@ -204,9 +204,26 @@ export default function Layout({ children, alertCount = 0, approvalCount = 0 }) 
             </div>
           )}
           
-          {/* User pill for mobile/topbar */}
-          <div className="mobile-only" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-             <div onClick={() => { logout(); toast.success(t('layout.Signed out', 'Signed out')); navigate('/login'); }} style={{ fontSize: 24, cursor: 'pointer' }}>👋</div>
+          {/* Sign out — mobile topbar */}
+          <div className="mobile-only" style={{ display: 'flex', alignItems: 'center' }}>
+            <button
+              onClick={() => { logout(); toast.success(t('layout.Signed out', 'Signed out')); navigate('/login'); }}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                padding: '7px 12px', borderRadius: 10,
+                border: '1px solid rgba(239,68,68,0.25)',
+                background: 'var(--red-lt)',
+                color: 'var(--red)',
+                fontSize: 12, fontWeight: 600,
+                cursor: 'pointer', letterSpacing:'-0.01em',
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 15 15" fill="none"
+                stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M5.5 1.5H2a1 1 0 00-1 1v10a1 1 0 001 1h3.5m2-10l3.5 4-3.5 4m3.5-4H5.5"/>
+              </svg>
+              {t('nav.Sign out', 'Sign out')}
+            </button>
           </div>
           
           <div className="user-avatar desktop-only">
