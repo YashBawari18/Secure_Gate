@@ -68,7 +68,8 @@ export default function VoiceAlert() {
       if (e.data.size > 0) chunksRef.current.push(e.data);
     };
     mediaRec.onstop = () => {
-      const blob = new Blob(chunksRef.current, { type: mimeType });
+      const finalMime = options.mimeType || 'audio/mp4';
+      const blob = new Blob(chunksRef.current, { type: finalMime });
       setAudioUrl(URL.createObjectURL(blob)); // local preview
       stream.getTracks().forEach(tr => tr.stop()); // release mic
     };
