@@ -6,7 +6,7 @@ const alertSchema = new mongoose.Schema({
   severity: { type: String, enum: ['low', 'medium', 'high'], default: 'medium' },
   type: {
     type: String,
-    enum: ['repeated_attempt', 'otp_reuse', 'tailgating', 'face_mismatch', 'suspicious_pattern', 'other'],
+    enum: ['repeated_attempt', 'otp_reuse', 'tailgating', 'face_mismatch', 'suspicious_pattern', 'voice_emergency', 'other'],
     required: true,
   },
   status: { type: String, enum: ['active', 'dismissed', 'escalated'], default: 'active' },
