@@ -93,6 +93,9 @@ export default function ResidentInvite() {
     <div className="fade-in" style={{ maxWidth:460 }}>
       <form onSubmit={handleSubmit}>
         <div className="card">
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
+            <button type="button" onClick={() => setForm(f => ({ ...f, name: 'Hackathon Judge', phone: '+91 9876543210' }))} style={{ fontSize: 11, padding: '4px 10px', background: 'rgba(59,130,246,0.1)', color: '#3b82f6', border: '1px dashed #3b82f6', borderRadius: 6, cursor: 'pointer', fontWeight: 600 }}>⚡ Demo Fill</button>
+          </div>
           <div className="form-group">
             <label className="form-label">{t('resInvite.visName', 'Visitor name *')}</label>
             <input className="form-input" value={form.name} onChange={e=>upd('name',e.target.value)} placeholder={t('resInvite.visNamePh', 'Full name of your visitor')}/>

@@ -85,7 +85,10 @@ export default function GuardEntry() {
         {/* ── Entry form ── */}
         <div>
           <div className="card" style={{ marginBottom:14 }}>
-            <div style={{ fontSize:13, fontWeight:500, marginBottom:16 }}>{t('guard.registerNewVisitor', 'Register new visitor')}</div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom:16 }}>
+              <div style={{ fontSize:13, fontWeight:500 }}>{t('guard.registerNewVisitor', 'Register new visitor')}</div>
+              <button type="button" onClick={() => setForm({ name: 'Hackathon Judge', phone: '+91 9876543210', flatNumber: 'A-501', purpose: 'guest', entryMethod: 'otp' })} style={{ fontSize: 11, padding: '4px 10px', background: 'rgba(59,130,246,0.1)', color: '#3b82f6', border: '1px dashed #3b82f6', borderRadius: 6, cursor: 'pointer', fontWeight: 600 }}>⚡ Demo Fill</button>
+            </div>
             <form onSubmit={createEntry}>
                <div className="form-group">
                 <label className="form-label">{t('guard.visitorName', 'Visitor name *')}</label>
