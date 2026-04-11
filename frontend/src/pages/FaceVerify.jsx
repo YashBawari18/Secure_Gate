@@ -56,30 +56,33 @@ export default function FaceVerify() {
       const idImg = await fetchImage(idSrc);
       const liveImg = await fetchImage(liveSrc);
 
-      const idDetection = await faceapi.detectSingleFace(idImg).withFaceLandmarks().withFaceDescriptor();
-      const liveDetection = await faceapi.detectSingleFace(liveImg).withFaceLandmarks().withFaceDescriptor();
+      // Using lower minConfidence helps consistently detect faces on ID cards which might be small or have watermarks
+      const options = new faceapi.SsdMobilenetv1Options({ minConfidence: 0.3 });
+
+      const idDetection = await faceapi.detectSingleFace(idImg, options).withFaceLandmarks().withFaceDescriptor();
+      const liveDetection = await faceapi.detectSingleFace(liveImg, options).withFaceLandmarks().withFaceDescriptor();
 
       if (!idDetection) {
-        setMatchScore({ error: t('faceVerify.noFaceId', 'No face detected in the ID card photo. Please retake.') });
+        setMatchScore({ error: t('faceVerify.noFaceId', 'No face detected in the ID card photo. Please ensure good lighting and try again.') });
         setProcessing(false);
         return;
       }
       if (!liveDetection) {
-        setMatchScore({ error: t('faceVerify.noFaceLive', 'No face detected in the Live photo. Please retake.') });
+        setMatchScore({ error: t('faceVerify.noFaceLive', 'No face detected in the Live photo. Please ensure your face is fully visible.') });
         setProcessing(false);
         return;
       }
 
-      // 0.0 is an exact match. 0.6 is the default threshold.
+      // 0.0 is an exact match. 0.55 provides a good balance avoiding false positives compared to 0.6
       const distance = faceapi.euclideanDistance(idDetection.descriptor, liveDetection.descriptor);
-      const isMatch = distance < 0.6;
+      const isMatch = distance < 0.55;
       
       let pct;
       if (isMatch) {
-         // Map 0.0-0.6 to 80%-100%
-         pct = Math.round((1 - (distance / 0.6) * 0.2) * 100);
+         // Map 0.0-0.55 to 80%-100%
+         pct = Math.round((1 - (distance / 0.55) * 0.2) * 100);
       } else {
-         // Map >0.6 to 0-60%
+         // Map >0.55 to 0-60%
          pct = Math.max(0, Math.round((1 - distance) * 100) - 20);
       }
 
@@ -121,7 +124,7 @@ export default function FaceVerify() {
               <div>
                 <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 12 }}>{t('faceVerify.step1', 'Step 1: Capture ID Card')}</div>
                 <div style={{ borderRadius: 12, overflow: 'hidden', marginBottom: 16, border: '2px solid var(--bdr)' }}>
-                  <Webcam audio={false} ref={webcamRef} screenshotFormat="image/jpeg" videoConstraints={{ facingMode: 'environment' }} style={{ width: '100%', display: 'block' }} />
+                  <Webcam audio={false} ref={webcamRef} screenshotFormat="image/jpeg" videoConstraints={{ facingMode: 'environment', width: 1280, height: 720 }} style={{ width: '100%', display: 'block' }} />
                 </div>
                 <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: 12 }} onClick={() => capture('id')}>
                   {t('faceVerify.captureIdBtn', 'Capture ID Photo')}
@@ -133,7 +136,7 @@ export default function FaceVerify() {
               <div className="fade-in">
                 <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 12 }}>{t('faceVerify.step2', 'Step 2: Capture Live Face')}</div>
                 <div style={{ borderRadius: 12, overflow: 'hidden', marginBottom: 16, border: '2px solid var(--pri)' }}>
-                  <Webcam audio={false} ref={webcamRef} screenshotFormat="image/jpeg" videoConstraints={{ facingMode: 'environment' }} style={{ width: '100%', display: 'block' }} />
+                  <Webcam audio={false} ref={webcamRef} screenshotFormat="image/jpeg" videoConstraints={{ facingMode: 'user', width: 1280, height: 720 }} style={{ width: '100%', display: 'block' }} />
                 </div>
                 <div style={{ display: 'flex', gap: 10 }}>
                   <button className="btn btn-ghost" style={{ flex: 1, justifyContent: 'center', padding: 12 }} onClick={reset}>{t('faceVerify.goBack', 'Go Back')}</button>
