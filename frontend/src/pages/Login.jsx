@@ -10,13 +10,12 @@ const LANGS = [
   { code: 'mr', label: 'मराठी',  flag: '🟠' },
 ];
 
-function LangSwitcher({ dark = false }) {
+function LangSwitcher() {
   const { i18n } = useTranslation();
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
   const current = LANGS.find(l => l.code === i18n.language) || LANGS[0];
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     if (!open) return;
     const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
@@ -27,55 +26,56 @@ function LangSwitcher({ dark = false }) {
   return (
     <div ref={ref} style={{ position: 'relative' }}>
       <button
+        type="button"
         onClick={() => setOpen(o => !o)}
         style={{
           display: 'flex', alignItems: 'center', gap: 6,
-          padding: '6px 12px', borderRadius: 20,
-          border: dark ? '1px solid rgba(255,255,255,0.25)' : '1px solid #e2e8f0',
-          background: dark ? 'rgba(255,255,255,0.12)' : '#fff',
-          color: dark ? '#fff' : '#374151',
-          fontSize: 13, fontWeight: 500, cursor: 'pointer',
+          padding: '8px 14px', borderRadius: 20,
+          border: '1px solid rgba(255,255,255,0.6)',
+          background: 'rgba(255,255,255,0.7)',
+          color: '#1e293b',
+          fontSize: 13, fontWeight: 600, cursor: 'pointer',
           backdropFilter: 'blur(10px)',
           letterSpacing: '-0.01em',
           transition: 'all 0.2s ease',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.05)'
         }}
       >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="12" cy="12" r="10"/>
-          <line x1="2" y1="12" x2="22" y2="12"/>
-          <path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/>
-        </svg>
+        <span style={{ fontSize: 16 }}>{current.flag}</span>
         {current.label}
-        <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.8">
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="2">
           <polyline points="2,3.5 5,6.5 8,3.5"/>
         </svg>
       </button>
 
       {open && (
         <div style={{
-          position: 'absolute', top: 'calc(100% + 6px)', right: 0,
-          background: '#fff', border: '1px solid #e2e8f0',
-          borderRadius: 12, boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
-          overflow: 'hidden', zIndex: 9999, minWidth: 130,
+          position: 'absolute', top: 'calc(100% + 8px)', right: 0,
+          background: 'rgba(255,255,255,0.95)', border: '1px solid #e2e8f0',
+          borderRadius: 16, boxShadow: '0 12px 32px rgba(0,0,0,0.12)',
+          overflow: 'hidden', zIndex: 9999, minWidth: 140,
+          backdropFilter: 'blur(20px)'
         }}>
           {LANGS.map(l => (
             <button
+              type="button"
               key={l.code}
               onClick={() => { i18n.changeLanguage(l.code); setOpen(false); }}
               style={{
-                width: '100%', display: 'flex', alignItems: 'center', gap: 8,
-                padding: '10px 14px', border: 'none', background:
-                  l.code === i18n.language ? '#eff4ff' : '#fff',
+                width: '100%', display: 'flex', alignItems: 'center', gap: 10,
+                padding: '12px 16px', border: 'none', background:
+                  l.code === i18n.language ? '#eff4ff' : 'transparent',
                 color: l.code === i18n.language ? '#2563eb' : '#374151',
-                fontSize: 13, fontWeight: l.code === i18n.language ? 600 : 400,
+                fontSize: 14, fontWeight: l.code === i18n.language ? 600 : 500,
                 cursor: 'pointer', textAlign: 'left',
-                borderBottom: '1px solid #f1f5f9',
+                borderBottom: '1px solid rgba(0,0,0,0.03)',
+                transition: 'all 0.2s'
               }}
             >
-              <span style={{ fontSize: 16 }}>{l.flag}</span>
+              <span style={{ fontSize: 18 }}>{l.flag}</span>
               {l.label}
               {l.code === i18n.language && (
-                <svg style={{ marginLeft: 'auto' }} width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="#2563eb" strokeWidth="2">
+                <svg style={{ marginLeft: 'auto' }} width="14" height="14" viewBox="0 0 12 12" fill="none" stroke="#2563eb" strokeWidth="2.5">
                   <polyline points="2,6 5,9 10,3"/>
                 </svg>
               )}
@@ -87,15 +87,55 @@ function LangSwitcher({ dark = false }) {
   );
 }
 
+const CSS3DModel = () => (
+  <div style={{ width: 400, height: 400, position: 'relative', margin: '40px auto 0', perspective: 1200 }}>
+    <style>
+      {`
+        @keyframes spin3d {
+          0% { transform: rotateX(0deg) rotateY(0deg) rotateZ(0deg); }
+          100% { transform: rotateX(360deg) rotateY(720deg) rotateZ(360deg); }
+        }
+        @keyframes pulseCore {
+          0%, 100% { transform: scale(1) translateZ(0); box-shadow: 0 0 60px #4f46e5, inset 0 0 30px #ec4899; }
+          50% { transform: scale(1.15) translateZ(0); box-shadow: 0 0 100px #3b82f6, inset 0 0 50px #8b5cf6; }
+        }
+        .sh-ring {
+          position: absolute; inset: 0; margin: auto;
+          border-radius: 50%;
+          border: 12px solid rgba(255,255,255,0.4);
+          box-shadow: 0 0 30px rgba(79, 70, 229, 0.3), inset 0 0 20px rgba(79, 70, 229, 0.4);
+          background: rgba(255,255,255,0.05);
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
+          transform-style: preserve-3d;
+        }
+        .sh-core {
+          position: absolute; inset: 0; margin: auto;
+          width: 120px; height: 120px;
+          background: linear-gradient(135deg, #4f46e5, #ec4899, #3b82f6);
+          background-size: 200% 200%;
+          border-radius: 50%;
+          animation: pulseCore 4s ease-in-out infinite;
+        }
+      `}
+    </style>
+    <div style={{ position: 'absolute', width: '100%', height: '100%', transformStyle: 'preserve-3d', animation: 'spin3d 25s linear infinite' }}>
+      <div className="sh-ring" style={{ width: 340, height: 340, transform: 'rotateX(45deg) rotateY(45deg)' }} />
+      <div className="sh-ring" style={{ width: 260, height: 260, transform: 'rotateX(-45deg) rotateY(-45deg)' }} />
+      <div className="sh-ring" style={{ width: 180, height: 180, transform: 'rotateY(90deg) rotateZ(45deg)' }} />
+      <div className="sh-core" style={{ filter: 'drop-shadow(0 20px 40px rgba(79,70,229,0.5))' }} />
+    </div>
+  </div>
+);
+
 const ROLES = [
   {
     role: 'admin',
     label: 'Admin',
     email: 'admin@securegate.com',
     password: 'admin123',
-    color: '#2563eb',
-    bg: '#eff4ff',
-    desc: 'Full platform access, analytics, user management',
+    color: '#3b82f6',
+    bg: '#eff6ff',
     iconD: 'M7.5 1a6.5 6.5 0 100 13zm3.5-4.5a3.5 3.5 0 01-7 0',
   },
   {
@@ -103,9 +143,8 @@ const ROLES = [
     label: 'Guard',
     email: 'guard@securegate.com',
     password: 'guard123',
-    color: '#16a34a',
-    bg: '#f0fdf4',
-    desc: 'Entry verification, OTP/QR scanning, gate log',
+    color: '#10b981',
+    bg: '#ecfdf5',
     iconD: 'M7.5 1L14 4.5v7L7.5 14 1 11.5v-7zm0 0v13M1 4.5l6.5 3 6.5-3',
   },
   {
@@ -113,14 +152,11 @@ const ROLES = [
     label: 'Resident',
     email: 'resident@securegate.com',
     password: 'resident123',
-    color: '#d97706',
+    color: '#f59e0b',
     bg: '#fffbeb',
-    desc: 'Approve visitors, invite guests, view history',
     iconD: 'M1 14V7.5L7.5 2 14 7.5V14M5 10h5v4H5z',
   },
 ];
-
-// features array moved inside component or mapped dynamically
 
 export default function Login() {
   const { login }   = useAuth();
@@ -131,15 +167,6 @@ export default function Login() {
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading]   = useState(false);
   const [selected, setSelected] = useState(null);
-
-  const displayFeatures = [
-    t('login.feat1', 'OTP & QR-based verified entry'),
-    t('login.feat2', 'Real-time resident notifications'),
-    t('login.feat3', 'Suspicious activity auto-detection'),
-    t('login.feat4', 'AI face verification (new)'),
-    t('login.feat5', 'Visitor trust scoring system'),
-    t('login.feat6', 'Cross-gate watchlist & alerts')
-  ];
 
   const fillRole = (r) => {
     setEmail(r.email);
@@ -163,110 +190,105 @@ export default function Login() {
   };
 
   return (
-    <div className="login-container">
+    <div className="hero-wrapper fade-in">
+      {/* Animated Orbs */}
+      <div className="orb o1"></div>
+      <div className="orb o2"></div>
 
-      {/* ── Left panel ── */}
-      <div className="login-left fade-in">
-        <div>
-          {/* Logo + lang switcher row */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 56 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{ width: 44, height: 44, background: 'rgba(255,255,255,.15)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(10px)' }}>
-                <svg width="24" height="24" viewBox="0 0 20 20" fill="none">
-                  <path d="M10 1.5L17 5.5v9L10 18.5 3 14.5v-9L10 1.5z" stroke="#fff" strokeWidth="1.8" strokeLinejoin="round"/>
-                  <circle cx="10" cy="10" r="3" fill="#fff"/>
-                </svg>
-              </div>
-              <div>
-                <div style={{ color: '#fff', fontWeight: 700, fontSize: 20, lineHeight: 1.2, letterSpacing: '-0.02em' }}>SecureGate</div>
-                <div style={{ color: 'rgba(255,255,255,.6)', fontSize: 12, fontWeight: 500, marginTop: 2 }}>Resident Platform v3.0</div>
-              </div>
-            </div>
-            <LangSwitcher dark />
-          </div>
-
-          <h1 style={{ color: '#fff', fontSize: 32, fontWeight: 700, lineHeight: 1.2, marginBottom: 16, letterSpacing: '-0.03em' }}>
-            {t('login.leftTitle', 'Secure, verified entry for your community.')}
-          </h1>
-          <p style={{ color: 'rgba(255,255,255,.75)', fontSize: 16, lineHeight: 1.6, marginBottom: 40, fontWeight: 400 }}>
-            {t('login.leftDesc', 'Real-time approvals, automatic AI face checks, and advanced threat detection—all beautifully designed.')}
-          </p>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            {displayFeatures.map((f, i) => (
-              <div key={i} className="fade-in" style={{ display: 'flex', alignItems: 'center', gap: 12, color: 'rgba(255,255,255,.9)', fontSize: 14, fontWeight: 500, animationDelay: `${i * 0.1}s` }}>
-                <div style={{ width: 22, height: 22, borderRadius: '50%', background: 'rgba(255,255,255,.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <svg width="12" height="12" viewBox="0 0 10 10">
-                    <polyline points="2,5 4,7 8,3" stroke="#fff" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </div>
-                {f}
-              </div>
-            ))}
-          </div>
-        </div>
-        <p style={{ color: 'rgba(255,255,255,.4)', fontSize: 12, fontWeight: 500 }}>&copy; 2026 SecureGate. All rights reserved.</p>
+      {/* Top right language switcher */}
+      <div style={{ position: 'absolute', top: 24, right: 32, zIndex: 100 }}>
+        <LangSwitcher />
       </div>
 
-      {/* ── Right panel ── */}
-      <div className="login-right">
-        <div className="login-card fade-in">
-
-          {/* Language switcher top-right of card */}
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
-            <LangSwitcher />
+      <div style={{ 
+        zIndex: 10, display: 'flex', flexWrap: 'wrap', width: '100%', 
+        maxWidth: 1300, padding: '40px 24px', gap: 60, alignItems: 'center', justifyContent: 'center' 
+      }}>
+        
+        {/* LEFT COLUMN: SECURITY MARKETING */}
+        <div style={{ flex: '1 1 500px', maxWidth: 640 }} className="fade-in">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 24 }}>
+            <div style={{ width: 48, height: 48, background: 'linear-gradient(135deg, #4f46e5, #ec4899)', borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 16px rgba(236, 72, 153, 0.25)' }}>
+              <svg width="24" height="24" viewBox="0 0 20 20" fill="none">
+                <path d="M10 1.5L17 5.5v9L10 18.5 3 14.5v-9L10 1.5z" stroke="#fff" strokeWidth="2.5" strokeLinejoin="round"/>
+                <circle cx="10" cy="10" r="3" fill="#fff"/>
+              </svg>
+            </div>
+            <div style={{ fontSize: 26, fontWeight: 800, color: 'var(--tx)', letterSpacing: '-0.03em' }}>SecureGate v3</div>
           </div>
 
-          <h2 className="login-title">{t('login.rightTitle', 'Sign in to your dashboard')}</h2>
-          <p style={{ color: 'var(--tx3)', fontSize: 14, marginBottom: 32, textAlign: 'center', fontWeight: 500 }}>{t('login.rightDesc', 'Choose a demo role below or use your custom login.')}</p>
+          <h1 className="hero-title" style={{ textAlign: 'left', fontSize: 56, marginBottom: 24, lineHeight: 1.1 }}>
+            {t('login.leftTitle', 'Next-Gen Community Security.')}
+          </h1>
+          <p style={{ color: 'var(--tx2)', fontSize: 18, lineHeight: 1.6, marginBottom: 40, fontWeight: 500 }}>
+            {t('login.leftDesc', 'Real-time approvals, automatic AI face checks, and advanced threat detection—all wrapped in a beautifully fast interface.')}
+          </p>
 
-          {/* Role selector cards */}
-          <div className="roles-grid">
-            {ROLES.map(r => (
-              <button key={r.role} type="button" onClick={() => fillRole(r)}
-                style={{ background: selected === r.role ? r.bg : 'var(--bg3)', border: `2px solid ${selected === r.role ? r.color : 'transparent'}`, borderRadius: 14, padding: '16px 12px', cursor: 'pointer', textAlign: 'center', transition: 'all .25s ease', outline: 'none', boxShadow: selected === r.role ? `0 4px 12px ${r.color}30` : 'none' }}>
-                <div style={{ width: 36, height: 36, background: selected === r.role ? r.color : 'var(--bg2)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 10px', transition: 'all 0.2s ease', color: selected === r.role ? '#fff' : r.color, boxShadow: 'var(--shadow-sm)' }}>
-                  <svg width="18" height="18" viewBox="0 0 15 15" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d={r.iconD}/>
-                  </svg>
-                </div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--tx)', marginBottom: 2 }}>
-                  {t('login.roles.' + r.role, r.label)}
-                </div>
-              </button>
-            ))}
-          </div>
-
-          {/* Form */}
-          <form onSubmit={handleSubmit}>
-            <div className="form-group" style={{ marginBottom: 16 }}>
-              <label className="form-label">{t('login.email', 'Email Address')}</label>
-              <input className="form-input" type="email" value={email}
-                onChange={e => setEmail(e.target.value)} placeholder="name@domain.com" autoComplete="email" />
-            </div>
-
-            <div className="form-group" style={{ position: 'relative', marginBottom: 28 }}>
-              <label className="form-label">{t('login.password', 'Password')}</label>
-              <input className="form-input" type={showPass ? 'text' : 'password'} value={password}
-                onChange={e => setPassword(e.target.value)} placeholder="••••••••"
-                autoComplete="current-password" style={{ paddingRight: 44 }} />
-              <button type="button" onClick={() => setShowPass(s => !s)}
-                style={{ position: 'absolute', right: 12, top: 32, background: 'none', border: 'none', color: 'var(--tx3)', padding: 6, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 8 }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  {showPass 
-                    ? <><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/><line x1="1" y1="1" x2="23" y2="23"/></> 
-                    : <><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></>}
-                </svg>
-              </button>
-            </div>
-
-            <button type="submit" disabled={loading} className="btn btn-pri btn-full" style={{ fontSize: 15 }}>
-              {loading
-                ? <><span className="spinner" style={{ width: 18, height: 18, borderWidth: 2 }} />{t('login.loading', 'Authorizing...')}</>
-                : t('login.submit', 'Secure Sign In')}
-            </button>
-          </form>
+          <CSS3DModel />
         </div>
+
+        {/* RIGHT COLUMN: LOGIN PORTAL */}
+        <div style={{ flex: '1 1 400px', display: 'flex', justifyContent: 'center' }}>
+          <div className="glass-portal fade-in" style={{ width: '100%', margin: 0 }}>
+            <div style={{ textAlign: 'center', marginBottom: 28 }}>
+              <h2 style={{ fontSize: 24, fontWeight: 800, color: 'var(--tx)', letterSpacing: '-0.02em', marginBottom: 8 }}>{t('login.rightTitle', 'Platform Sign In')}</h2>
+              <p style={{ color: 'var(--tx3)', fontSize: 14, fontWeight: 500 }}>{t('login.rightDesc', 'Select your demo role to access the portal')}</p>
+            </div>
+
+            {/* Roles */}
+            <div className="roles-grid" style={{ marginBottom: 32 }}>
+              {ROLES.map(r => (
+                <button key={r.role} type="button" onClick={() => fillRole(r)}
+                  style={{ 
+                    background: selected === r.role ? r.color : 'rgba(255,255,255,0.7)', 
+                    border: `1px solid ${selected === r.role ? r.color : 'rgba(255,255,255,0.8)'}`, 
+                    borderRadius: 16, padding: '14px 8px', cursor: 'pointer', textAlign: 'center', 
+                    transition: 'all .3s cubic-bezier(0.16,1,0.3,1)', outline: 'none', 
+                    boxShadow: selected === r.role ? `0 8px 20px ${r.color}50` : '0 2px 8px rgba(0,0,0,0.02)',
+                    transform: selected === r.role ? 'translateY(-4px)' : 'none'
+                  }}>
+                  <div style={{ width: 32, height: 32, background: selected === r.role ? 'rgba(255,255,255,0.2)' : r.bg, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 8px', color: selected === r.role ? '#fff' : r.color }}>
+                    <svg width="16" height="16" viewBox="0 0 15 15" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d={r.iconD}/></svg>
+                  </div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: selected === r.role ? '#fff' : 'var(--tx2)' }}>
+                    {t('login.roles.' + r.role, r.label)}
+                  </div>
+                </button>
+              ))}
+            </div>
+
+            <form onSubmit={handleSubmit}>
+              <div className="form-group" style={{ marginBottom: 16 }}>
+                <label className="form-label" style={{ color: 'var(--tx2)' }}>{t('login.email', 'Email Address')}</label>
+                <input className="form-input" style={{ background: 'rgba(255,255,255,0.8)' }} type="email" value={email}
+                  onChange={e => setEmail(e.target.value)} placeholder="name@domain.com" autoComplete="email" />
+              </div>
+
+              <div className="form-group" style={{ position: 'relative', marginBottom: 32 }}>
+                <label className="form-label" style={{ color: 'var(--tx2)' }}>{t('login.password', 'Password')}</label>
+                <input className="form-input" style={{ background: 'rgba(255,255,255,0.8)', paddingRight: 44 }} type={showPass ? 'text' : 'password'} value={password}
+                  onChange={e => setPassword(e.target.value)} placeholder="••••••••" autoComplete="current-password" />
+                <button type="button" onClick={() => setShowPass(s => !s)}
+                  style={{ position: 'absolute', right: 12, top: 32, background: 'none', border: 'none', color: 'var(--tx3)', padding: 6, cursor: 'pointer' }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    {showPass 
+                      ? <><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/><line x1="1" y1="1" x2="23" y2="23"/></> 
+                      : <><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></>}
+                  </svg>
+                </button>
+              </div>
+
+              <button type="submit" disabled={loading} className="btn" style={{ 
+                width: '100%', padding: 16, fontSize: 16, fontWeight: 700, 
+                background: 'linear-gradient(135deg, #4f46e5, #9333ea)', color: '#fff', 
+                borderRadius: 16, boxShadow: '0 8px 24px rgba(147, 51, 234, 0.3)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center'
+              }}>
+                {loading ? <><span className="spinner" style={{ width: 18, height: 18, borderWidth: 2 }} />{t('login.loading', 'Authorizing...')}</> : t('login.submit', 'Access SecureGate')}
+              </button>
+            </form>
+          </div>
+        </div>
+
       </div>
     </div>
   );

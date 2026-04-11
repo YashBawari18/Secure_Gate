@@ -170,12 +170,7 @@ input,select,textarea{font-family:var(--font);}
 .alert-strip { display:flex; gap:10px; padding:12px; border-radius:12px; background:var(--bg3); transition:all 0.2s; }
 .alert-strip.warn { background:var(--amb-lt); }
 
-/* Login */
-.login-wrap{min-height:100vh;background:linear-gradient(135deg, var(--bg3), #e0e7ff);display:flex;align-items:center;justify-content:center;padding:24px;}
-.login-card{background:rgba(255,255,255,0.85);backdrop-filter:blur(32px);border:1px solid rgba(255,255,255,0.6);border-radius:32px;padding:48px 40px;width:100%;max-width:440px;box-shadow:var(--shadow-lg);}
-.login-logo{width:56px;height:56px;background:linear-gradient(135deg, var(--pri), #818cf8);border-radius:18px;display:flex;align-items:center;justify-content:center;margin:0 auto 24px;box-shadow:0 8px 24px rgba(79,70,229,0.3);}
-.login-title{font-size:26px;font-weight:700;text-align:center;margin-bottom:8px;letter-spacing:-0.03em;}
-
+/* Removed old login layout */
 /* Grid Utilities */
 .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(320px, 100%), 1fr));gap:32px;margin-bottom:32px;}
 .grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(260px, 100%), 1fr));gap:24px;margin-bottom:32px;}
@@ -189,10 +184,7 @@ input,select,textarea{font-family:var(--font);}
 .fade-in { animation: fadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
 
-/* ── Extended Mobile Components ── */
-.login-container { min-height: 100vh; background: var(--bg); display: flex; overflow: hidden; }
-.login-left { width: 440px; flex-shrink: 0; background: linear-gradient(135deg, var(--pri), var(--pri-dk)); padding: 48px 40px; display: flex; flex-direction: column; justify-content: space-between; z-index: 2; position: relative; }
-.login-right { flex: 1; display: flex; align-items: center; justify-content: center; padding: 40px; background: linear-gradient(135deg, var(--bg3), #e0e7ff); overflow-y: auto; }
+/* Removed old extended login layout */
 .roles-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 24px; }
 .table-responsive { overflow-x: auto; width: 100%; -webkit-overflow-scrolling: touch; border-radius: 12px; }
 
@@ -240,4 +232,242 @@ input,select,textarea{font-family:var(--font);}
   .login-card { padding: 32px 24px; border-radius: 24px; }
   
   .data-table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%; white-space: nowrap; }
+}
+
+/* ============================================================== */
+/* CRAZY BRIGHT UI (LANDING & DASHBOARD OVERHAUL)                 */
+/* ============================================================== */
+
+/* ── Animated Backgrounds & Orbs ── */
+@keyframes orbFloat {
+  0%   { transform: translate(0, 0) rotate(0deg) scale(1); }
+  33%  { transform: translate(30px, -50px) rotate(120deg) scale(1.1); }
+  66%  { transform: translate(-20px, 20px) rotate(240deg) scale(0.9); }
+  100% { transform: translate(0, 0) rotate(360deg) scale(1); }
+}
+
+@keyframes meshShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* ── Awesome Hero Landing ── */
+.hero-wrapper {
+  position: relative;
+  min-height: 100vh;
+  width: 100%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Crazy animated pastel/bright mesh */
+  background: linear-gradient(-45deg, #e0e7ff, #f0fdf4, #fef2f2, #fffbeb);
+  background-size: 400% 400%;
+  animation: meshShift 15s ease infinite;
+}
+
+.orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  z-index: 1;
+  opacity: 0.6;
+  animation: orbFloat 20s infinite linear;
+}
+.orb.o1 { width: 400px; height: 400px; background: #93c5fd; top: -100px; left: -100px; animation-duration: 25s; }
+.orb.o2 { width: 500px; height: 500px; background: #fca5a5; bottom: -150px; right: -100px; animation-duration: 30s; animation-direction: reverse; }
+.orb.o3 { width: 300px; height: 300px; background: #86efac; top: 30%; left: 60%; animation-duration: 20s; }
+
+/* The Glassy Login Portal */
+.glass-portal {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  max-width: 460px;
+  background: rgba(255, 255, 255, 0.45);
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  box-shadow: 
+    0 24px 48px rgba(0,0,0,0.08), 
+    inset 0 1px 0 rgba(255,255,255,0.8),
+    inset 0 0 20px rgba(255,255,255,0.5);
+  border-radius: 36px;
+  padding: 48px 40px;
+  transform-style: preserve-3d;
+  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.glass-portal:hover {
+  transform: translateY(-5px);
+}
+
+.hero-title {
+  font-size: 32px;
+  font-weight: 800;
+  background: linear-gradient(135deg, #1e3a8a, #4f46e5, #9333ea);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-align: center;
+  margin-bottom: 8px;
+  letter-spacing: -0.04em;
+}
+
+/* Floating feature pills around the portal */
+@keyframes pillFloatWrapper {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+.floating-pill {
+  position: absolute;
+  padding: 12px 20px;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 30px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e293b;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 20;
+  animation: pillFloatWrapper 6s ease-in-out infinite;
+}
+.floating-pill.p1 { top: 20%; left: -220px; animation-delay: 0s; }
+.floating-pill.p2 { bottom: 30%; right: -240px; animation-delay: 1.5s; }
+.floating-pill.p3 { bottom: 10%; left: -180px; animation-delay: 3s; }
+.floating-pill.p4 { top: 10%; right: -180px; animation-delay: 4.5s; }
+
+/* ── Crazy Bento Dashboard ── */
+.crazy-bento-wrapper {
+  position: relative;
+}
+.crazy-bento-wrapper::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(circle at 50% -20%, #e0e7ff, transparent 60%),
+              radial-gradient(circle at -20% 50%, #f0fdf4, transparent 50%),
+              radial-gradient(circle at 100% 50%, #fef2f2, transparent 50%);
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* Giant glowing KPIs */
+.bento-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+  margin-bottom: 32px;
+}
+.bento-kpi {
+  background: rgba(255,255,255,0.6);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255,255,255,0.8);
+  padding: 28px;
+  border-radius: 28px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.03);
+  transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  display: flex;
+  flex-direction: column;
+}
+.bento-kpi::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.4) 0%, transparent 50%, rgba(255,255,255,0.1) 100%);
+  pointer-events: none;
+}
+.bento-kpi:hover {
+  transform: translateY(-8px) scale(1.03);
+  background: rgba(255,255,255,0.9);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.08), 0 0 0 2px var(--hover-color, #fff);
+}
+
+.bento-num {
+  font-size: 48px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  margin-top: auto;
+  font-family: var(--font); /* overriding mono to look punchier */
+}
+.bento-lbl {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--tx2);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Asymmetrical Bento Rows */
+.bento-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+.bento-row-inv {
+  grid-template-columns: 1fr 2fr;
+}
+
+.bento-card {
+  background: rgba(255,255,255,0.6);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255,255,255,0.8);
+  border-radius: 32px;
+  padding: 32px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.03);
+  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.bento-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.06);
+  background: rgba(255,255,255,0.85);
+}
+
+.bento-card-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--tx);
+  letter-spacing: -0.02em;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* Live feed styling in bento */
+.bento-feed-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  border-radius: 20px;
+  background: rgba(255,255,255,0.5);
+  margin-bottom: 12px;
+  transition: all 0.3s;
+  border: 1px solid transparent;
+}
+.bento-feed-item:hover {
+  background: #fff;
+  border-color: rgba(226,232,240,0.8);
+  transform: scale(1.02);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.04);
+}
+
+@media(max-width: 1024px) {
+  .bento-kpi-grid { grid-template-columns: repeat(2, 1fr); }
+  .bento-row, .bento-row-inv { grid-template-columns: 1fr; }
+  .floating-pill { display: none; }
+}
+@media(max-width: 640px) {
+  .bento-kpi-grid { grid-template-columns: 1fr; }
+  .glass-portal { border-radius: 24px; padding: 32px 24px; }
 }
