@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 
 /* ── Inline SVG icon ── */
@@ -83,12 +84,14 @@ export default function Layout({ children, alertCount = 0, approvalCount = 0 }) 
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const { t, i18n } = useTranslation();
 
   if (!user) return null;
 
   const initials = user.name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'U';
   const navGroups = NAV[user.role] || [];
-  const pageTitle = PAGE_TITLES[location.pathname] || 'SecureGate';
+  const pageTitleValue = PAGE_TITLES[location.pathname] || 'SecureGate';
+  const translatedPageTitle = pageTitleValue === 'SecureGate' ? 'SecureGate' : t('pageTitles.' + pageTitleValue, { defaultValue: pageTitleValue });
 
   const getBadgeCount = (key) => {
     if (key === 'alerts' && alertCount > 0)     return alertCount;
@@ -139,7 +142,7 @@ export default function Layout({ children, alertCount = 0, approvalCount = 0 }) 
           {navGroups.map(group => (
             <div key={group.section} style={{ marginBottom: 16 }}>
               <div className="desktop-only" style={{ fontSize: 11, color: 'var(--tx3)', textTransform: 'uppercase', letterSpacing: '1px', padding: '12px 14px 8px', fontWeight: 600 }}>
-                {group.section}
+                {t('nav.sections.' + group.section, { defaultValue: group.section })}
               </div>
               {group.items.map(item => {
                 const active = location.pathname === item.path;
@@ -151,8 +154,8 @@ export default function Layout({ children, alertCount = 0, approvalCount = 0 }) 
                     title={item.label}
                   >
                     <Ico d={item.icon} size={18} />
-                    <span>{item.label}</span>
-                    {item.isNew && <span className="badge" style={{ background: 'var(--pri)', color: '#fff', marginLeft: 'auto', fontSize: 9 }}>NEW</span>}
+                    <span>{t('nav.items.' + item.label, { defaultValue: item.label })}</span>
+                    {item.isNew && <span className="badge" style={{ background: 'var(--pri)', color: '#fff', marginLeft: 'auto', fontSize: 9 }}>{t('nav.NEW', 'NEW')}</span>}
                     {badge != null && <span className="badge" style={{ background: 'var(--red)', color: '#fff', marginLeft: 'auto', fontSize: 11 }}>{badge}</span>}
                   </div>
                 );
@@ -163,9 +166,9 @@ export default function Layout({ children, alertCount = 0, approvalCount = 0 }) 
 
         {/* Bottom logout */}
         <div style={{ padding: '16px 12px', borderTop: '1px solid rgba(226,232,240,0.6)' }}>
-          <div className="nav-item" style={{ color: 'var(--red)' }} onClick={() => { logout(); toast.success('Signed out safely'); navigate('/login'); }}>
+          <div className="nav-item" style={{ color: 'var(--red)' }} onClick={() => { logout(); toast.success(t('layout.Signed out safely', 'Signed out safely')); navigate('/login'); }}>
             <Ico d="M5.5 1.5H2a1 1 0 00-1 1v10a1 1 0 001 1h3.5m2-10l3.5 4-3.5 4m3.5-4H5.5" size={18} />
-            <span>Sign out</span>
+            <span>{t('nav.Sign out', 'Sign out')}</span>
           </div>
         </div>
       </div>
@@ -175,19 +178,29 @@ export default function Layout({ children, alertCount = 0, approvalCount = 0 }) 
 
         {/* Topbar */}
         <div className="topbar">
-          <div style={{ flex: 1, fontSize: 18, fontWeight: 700, color: 'var(--tx)' }}>{pageTitle}</div>
+          <div style={{ flex: 1, fontSize: 18, fontWeight: 700, color: 'var(--tx)' }}>{translatedPageTitle}</div>
           
+          <select 
+            value={i18n.language} 
+            onChange={(e) => i18n.changeLanguage(e.target.value)} 
+            style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid var(--bd)', background: 'var(--bg)', color: 'var(--tx)', fontSize: 13, outline: 'none', cursor: 'pointer', marginRight: 10 }}
+          >
+            <option value="en">English</option>
+            <option value="hi">हिंदी</option>
+            <option value="mr">मराठी</option>
+          </select>
+
           {alertCount > 0 && (
             <div onClick={() => navigate(`/${user.role}/alerts`)}
               style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 16px', background: 'var(--red-lt)', border: '1px solid rgba(239,68,68,0.4)', borderRadius: 20, fontSize: 13, color: 'var(--red)', fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 12px rgba(239,68,68,0.15)', whiteSpace: 'nowrap' }}>
               <span style={{ width:8, height:8, borderRadius:'50%', background:'var(--red)', animation:'fadeIn 1s infinite alternate' }} />
-              {alertCount} alert{alertCount > 1 ? 's' : ''}
+              {alertCount} {alertCount > 1 ? t('layout.alerts', 'alerts') : t('layout.alert', 'alert')}
             </div>
           )}
           
           {/* User pill for mobile/topbar */}
           <div className="mobile-only" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-             <div onClick={() => { logout(); toast.success('Signed out'); navigate('/login'); }} style={{ fontSize: 24, cursor: 'pointer' }}>👋</div>
+             <div onClick={() => { logout(); toast.success(t('layout.Signed out', 'Signed out')); navigate('/login'); }} style={{ fontSize: 24, cursor: 'pointer' }}>👋</div>
           </div>
           
           <div className="user-avatar desktop-only">
@@ -197,7 +210,7 @@ export default function Layout({ children, alertCount = 0, approvalCount = 0 }) 
 
         {/* Page content */}
         <div className="page-content fade-in">
-          <div className="page-title mobile-only">{pageTitle}</div>
+          <div className="page-title mobile-only">{translatedPageTitle}</div>
           {children}
         </div>
       </div>
@@ -213,7 +226,7 @@ export default function Layout({ children, alertCount = 0, approvalCount = 0 }) 
                 <Ico d={item.icon} size={22} />
                 {badge != null && <span className="bn-badge">{badge}</span>}
               </div>
-              <span style={{ fontSize: 10 }}>{item.label}</span>
+              <span style={{ fontSize: 10 }}>{t('nav.items.' + item.label, { defaultValue: item.label })}</span>
             </div>
           );
         })}

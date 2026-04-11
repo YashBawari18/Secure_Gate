@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { visitorsAPI } from '../utils/api';
 import { useSocket } from '../hooks/useSocket';
+import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 
 const PURPOSE_META = {
@@ -15,13 +16,14 @@ export default function ResidentApprovals() {
   const [pending,  setPending]  = useState([]);
   const [loading,  setLoading]  = useState(true);
   const [acting,   setActing]   = useState({});
+  const { t } = useTranslation();
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
       const r = await visitorsAPI.getAll({ status:'pending', limit:20 });
       setPending(r.data.visitors);
-    } catch { toast.error('Failed to load approvals'); }
+    } catch { toast.error(t('resident.failedLoad', 'Failed to load approvals')); }
     finally { setLoading(false); }
   }, []);
 
@@ -29,7 +31,7 @@ export default function ResidentApprovals() {
 
   useSocket((event, data) => {
     if (event === 'approval_request') {
-      toast(`${data.visitor.name} is at the gate!`);
+      toast(`${data.visitor.name} ${t('resident.isAtGate', 'is at the gate!')}`);
       load();
     }
   });
@@ -39,9 +41,9 @@ export default function ResidentApprovals() {
     try {
       const resp = await visitorsAPI.approve(id);
       const testOtp = resp.data?.visitor?.otp || '';
-      toast.success(`${name} approved — OTP: ${testOtp}`, { duration: 5000 });
+      toast.success(`${name} ${t('resident.approvedOtp', 'approved — OTP: ')}${testOtp}`, { duration: 5000 });
       load();
-    } catch (err) { toast.error(err.response?.data?.message || 'Failed to approve'); }
+    } catch (err) { toast.error(err.response?.data?.message || t('resident.failedApprove', 'Failed to approve')); }
     finally { setActing(a => ({...a, [id]:null})); }
   };
 
@@ -49,9 +51,9 @@ export default function ResidentApprovals() {
     setActing(a => ({...a, [id]:'denying'}));
     try {
       await visitorsAPI.deny(id);
-      toast.success(`${name} denied`);
+      toast.success(`${name} ${t('resident.denied', 'denied')}`);
       load();
-    } catch { toast.error('Failed to deny'); }
+    } catch { toast.error(t('resident.failedDeny', 'Failed to deny')); }
     finally { setActing(a => ({...a, [id]:null})); }
   };
 
@@ -66,17 +68,17 @@ export default function ResidentApprovals() {
       <svg width="52" height="52" viewBox="0 0 52 52" fill="none" stroke="var(--bdr2)" strokeWidth="2" style={{ marginBottom:16 }}>
         <polyline points="8,26 20,38 44,14"/>
       </svg>
-      <div style={{ fontWeight:500, fontSize:16, color:'var(--tx2)' }}>All clear</div>
-      <div style={{ fontSize:13, marginTop:6 }}>No pending visitor approvals right now</div>
-      <button className="btn btn-ghost btn-sm" style={{ marginTop:16 }} onClick={load}>Refresh</button>
+      <div style={{ fontWeight:500, fontSize:16, color:'var(--tx2)' }}>{t('resident.allClear', 'All clear')}</div>
+      <div style={{ fontSize:13, marginTop:6 }}>{t('resident.noPending', 'No pending visitor approvals right now')}</div>
+      <button className="btn btn-ghost btn-sm" style={{ marginTop:16 }} onClick={load}>{t('resident.refresh', 'Refresh')}</button>
     </div>
   );
 
   return (
     <div className="fade-in">
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:14 }}>
-        <div style={{ fontSize:13, color:'var(--tx2)' }}>{pending.length} visitor{pending.length>1?'s':''} waiting</div>
-        <button className="btn btn-ghost btn-sm" onClick={load}>Refresh</button>
+        <div style={{ fontSize:13, color:'var(--tx2)' }}>{pending.length} {pending.length>1? t('resident.visitorsSpace', ' visitors ') : t('resident.visitorSpace', ' visitor ')} {t('resident.waiting', 'waiting')}</div>
+        <button className="btn btn-ghost btn-sm" onClick={load}>{t('resident.refresh', 'Refresh')}</button>
       </div>
 
       <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
@@ -92,14 +94,14 @@ export default function ResidentApprovals() {
                 <div style={{ flex:1 }}>
                   <div style={{ fontSize:14, fontWeight:600, color:'var(--tx)' }}>{v.name}</div>
                   <div style={{ fontSize:12, color:'var(--tx2)', marginTop:3 }}>
-                    Purpose: <span style={{ textTransform:'capitalize' }}>{meta.label}</span>
+                    {t('resident.purposeLabel', 'Purpose:')} <span style={{ textTransform:'capitalize' }}>{t(`admin.${meta.label.toLowerCase()}`, meta.label.toLowerCase())}</span>
                     {v.phone && <> · <span style={{ fontFamily:'var(--mono)' }}>{v.phone}</span></>}
                   </div>
                   <div style={{ fontSize:11, color:'var(--tx3)', marginTop:2 }}>
-                    Flat {v.flatNumber} · {new Date(v.createdAt).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}
+                    {t('resident.flatSpace', 'Flat ')}{v.flatNumber} · {new Date(v.createdAt).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}
                   </div>
                 </div>
-                <span className="badge badge-amber">Pending</span>
+                <span className="badge badge-amber">{t('resident.pending', 'Pending')}</span>
               </div>
 
               {v.isSuspicious && (
@@ -107,22 +109,22 @@ export default function ResidentApprovals() {
                   <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.3">
                     <path d="M6.5 1.5L12 11H1L6.5 1.5zM6.5 5v2.5m0 1.5v.5"/>
                   </svg>
-                  Flagged as suspicious: {v.suspicionReason || 'Multiple prior denials'}
+                  {t('resident.flaggedSuspicious', 'Flagged as suspicious:')} {v.suspicionReason || t('resident.multipleDenials', 'Multiple prior denials')}
                 </div>
               )}
 
               <div style={{ fontSize:12, color:'var(--tx3)', background:'var(--bg3)', padding:'8px 12px', borderRadius:8, marginBottom:12, lineHeight:1.5 }}>
-                Approving will send a one-time OTP to the visitor's phone. Valid for 30 minutes.
+                {t('resident.approvingWillSend', "Approving will send a one-time OTP to the visitor's phone. Valid for 30 minutes.")}
               </div>
 
               <div style={{ display:'flex', gap:9, flexWrap:'wrap' }}>
                 <button className="btn btn-success" disabled={isActing} onClick={()=>approve(v._id, v.name)}>
-                  {acting[v._id]==='approving' ? 'Approving...' : 'Approve & send OTP'}
+                  {acting[v._id]==='approving' ? t('resident.approving', 'Approving...') : t('resident.approveSendOtp', 'Approve & send OTP')}
                 </button>
                 <button className="btn btn-danger" disabled={isActing} onClick={()=>deny(v._id, v.name)}>
-                  {acting[v._id]==='denying' ? 'Denying...' : 'Deny entry'}
+                  {acting[v._id]==='denying' ? t('resident.denying', 'Denying...') : t('resident.denyEntry', 'Deny entry')}
                 </button>
-                <a href={`tel:${v.phone}`} className="btn btn-ghost" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Call visitor</a>
+                <a href={`tel:${v.phone}`} className="btn btn-ghost" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{t('resident.callVisitor', 'Call visitor')}</a>
               </div>
             </div>
           );

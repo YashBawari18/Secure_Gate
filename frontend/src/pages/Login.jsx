@@ -1,7 +1,91 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
+
+const LANGS = [
+  { code: 'en', label: 'English', flag: '🇬🇧' },
+  { code: 'hi', label: 'हिंदी',   flag: '🇮🇳' },
+  { code: 'mr', label: 'मराठी',  flag: '🟠' },
+];
+
+function LangSwitcher({ dark = false }) {
+  const { i18n } = useTranslation();
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+  const current = LANGS.find(l => l.code === i18n.language) || LANGS[0];
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  return (
+    <div ref={ref} style={{ position: 'relative' }}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 6,
+          padding: '6px 12px', borderRadius: 20,
+          border: dark ? '1px solid rgba(255,255,255,0.25)' : '1px solid #e2e8f0',
+          background: dark ? 'rgba(255,255,255,0.12)' : '#fff',
+          color: dark ? '#fff' : '#374151',
+          fontSize: 13, fontWeight: 500, cursor: 'pointer',
+          backdropFilter: 'blur(10px)',
+          letterSpacing: '-0.01em',
+          transition: 'all 0.2s ease',
+        }}
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="2" y1="12" x2="22" y2="12"/>
+          <path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/>
+        </svg>
+        {current.label}
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.8">
+          <polyline points="2,3.5 5,6.5 8,3.5"/>
+        </svg>
+      </button>
+
+      {open && (
+        <div style={{
+          position: 'absolute', top: 'calc(100% + 6px)', right: 0,
+          background: '#fff', border: '1px solid #e2e8f0',
+          borderRadius: 12, boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+          overflow: 'hidden', zIndex: 9999, minWidth: 130,
+        }}>
+          {LANGS.map(l => (
+            <button
+              key={l.code}
+              onClick={() => { i18n.changeLanguage(l.code); setOpen(false); }}
+              style={{
+                width: '100%', display: 'flex', alignItems: 'center', gap: 8,
+                padding: '10px 14px', border: 'none', background:
+                  l.code === i18n.language ? '#eff4ff' : '#fff',
+                color: l.code === i18n.language ? '#2563eb' : '#374151',
+                fontSize: 13, fontWeight: l.code === i18n.language ? 600 : 400,
+                cursor: 'pointer', textAlign: 'left',
+                borderBottom: '1px solid #f1f5f9',
+              }}
+            >
+              <span style={{ fontSize: 16 }}>{l.flag}</span>
+              {l.label}
+              {l.code === i18n.language && (
+                <svg style={{ marginLeft: 'auto' }} width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="#2563eb" strokeWidth="2">
+                  <polyline points="2,6 5,9 10,3"/>
+                </svg>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 const ROLES = [
   {
@@ -36,23 +120,26 @@ const ROLES = [
   },
 ];
 
-const features = [
-  'OTP & QR-based verified entry',
-  'Real-time resident notifications',
-  'Suspicious activity auto-detection',
-  'AI face verification (new)',
-  'Visitor trust scoring system',
-  'Cross-gate watchlist & alerts',
-];
+// features array moved inside component or mapped dynamically
 
 export default function Login() {
   const { login }   = useAuth();
   const navigate    = useNavigate();
+  const { t }       = useTranslation();
   const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading]   = useState(false);
   const [selected, setSelected] = useState(null);
+
+  const displayFeatures = [
+    t('login.feat1', 'OTP & QR-based verified entry'),
+    t('login.feat2', 'Real-time resident notifications'),
+    t('login.feat3', 'Suspicious activity auto-detection'),
+    t('login.feat4', 'AI face verification (new)'),
+    t('login.feat5', 'Visitor trust scoring system'),
+    t('login.feat6', 'Cross-gate watchlist & alerts')
+  ];
 
   const fillRole = (r) => {
     setEmail(r.email);
@@ -66,7 +153,7 @@ export default function Login() {
     setLoading(true);
     try {
       const user = await login(email, password);
-      toast.success(`Welcome, ${user.name.split(' ')[0]}!`);
+      toast.success(`${t('login.welcome', 'Welcome')}, ${user.name.split(' ')[0]}!`);
       navigate(`/${user.role}`);
     } catch (err) {
       toast.error(err.response?.data?.message || 'Login failed — check credentials');
@@ -81,29 +168,32 @@ export default function Login() {
       {/* ── Left panel ── */}
       <div className="login-left fade-in">
         <div>
-          {/* Logo */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 56 }}>
-            <div style={{ width: 44, height: 44, background: 'rgba(255,255,255,.15)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(10px)' }}>
-              <svg width="24" height="24" viewBox="0 0 20 20" fill="none">
-                <path d="M10 1.5L17 5.5v9L10 18.5 3 14.5v-9L10 1.5z" stroke="#fff" strokeWidth="1.8" strokeLinejoin="round"/>
-                <circle cx="10" cy="10" r="3" fill="#fff"/>
-              </svg>
+          {/* Logo + lang switcher row */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 56 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ width: 44, height: 44, background: 'rgba(255,255,255,.15)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(10px)' }}>
+                <svg width="24" height="24" viewBox="0 0 20 20" fill="none">
+                  <path d="M10 1.5L17 5.5v9L10 18.5 3 14.5v-9L10 1.5z" stroke="#fff" strokeWidth="1.8" strokeLinejoin="round"/>
+                  <circle cx="10" cy="10" r="3" fill="#fff"/>
+                </svg>
+              </div>
+              <div>
+                <div style={{ color: '#fff', fontWeight: 700, fontSize: 20, lineHeight: 1.2, letterSpacing: '-0.02em' }}>SecureGate</div>
+                <div style={{ color: 'rgba(255,255,255,.6)', fontSize: 12, fontWeight: 500, marginTop: 2 }}>Resident Platform v3.0</div>
+              </div>
             </div>
-            <div>
-              <div style={{ color: '#fff', fontWeight: 700, fontSize: 20, lineHeight: 1.2, letterSpacing: '-0.02em' }}>SecureGate</div>
-              <div style={{ color: 'rgba(255,255,255,.6)', fontSize: 12, fontWeight: 500, marginTop: 2 }}>Resident Platform v3.0</div>
-            </div>
+            <LangSwitcher dark />
           </div>
 
           <h1 style={{ color: '#fff', fontSize: 32, fontWeight: 700, lineHeight: 1.2, marginBottom: 16, letterSpacing: '-0.03em' }}>
-            Secure, verified entry for your community.
+            {t('login.leftTitle', 'Secure, verified entry for your community.')}
           </h1>
           <p style={{ color: 'rgba(255,255,255,.75)', fontSize: 16, lineHeight: 1.6, marginBottom: 40, fontWeight: 400 }}>
-            Real-time approvals, automatic AI face checks, and advanced threat detection—all beautifully designed.
+            {t('login.leftDesc', 'Real-time approvals, automatic AI face checks, and advanced threat detection—all beautifully designed.')}
           </p>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            {features.map((f, i) => (
+            {displayFeatures.map((f, i) => (
               <div key={i} className="fade-in" style={{ display: 'flex', alignItems: 'center', gap: 12, color: 'rgba(255,255,255,.9)', fontSize: 14, fontWeight: 500, animationDelay: `${i * 0.1}s` }}>
                 <div style={{ width: 22, height: 22, borderRadius: '50%', background: 'rgba(255,255,255,.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <svg width="12" height="12" viewBox="0 0 10 10">
@@ -122,8 +212,13 @@ export default function Login() {
       <div className="login-right">
         <div className="login-card fade-in">
 
-          <h2 className="login-title">Sign in to your dashboard</h2>
-          <p style={{ color: 'var(--tx3)', fontSize: 14, marginBottom: 32, textAlign: 'center', fontWeight: 500 }}>Choose a demo role below or use your custom login.</p>
+          {/* Language switcher top-right of card */}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
+            <LangSwitcher />
+          </div>
+
+          <h2 className="login-title">{t('login.rightTitle', 'Sign in to your dashboard')}</h2>
+          <p style={{ color: 'var(--tx3)', fontSize: 14, marginBottom: 32, textAlign: 'center', fontWeight: 500 }}>{t('login.rightDesc', 'Choose a demo role below or use your custom login.')}</p>
 
           {/* Role selector cards */}
           <div className="roles-grid">
@@ -135,7 +230,9 @@ export default function Login() {
                     <path d={r.iconD}/>
                   </svg>
                 </div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--tx)', marginBottom: 2 }}>{r.label}</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--tx)', marginBottom: 2 }}>
+                  {t('login.roles.' + r.role, r.label)}
+                </div>
               </button>
             ))}
           </div>
@@ -143,13 +240,13 @@ export default function Login() {
           {/* Form */}
           <form onSubmit={handleSubmit}>
             <div className="form-group" style={{ marginBottom: 16 }}>
-              <label className="form-label">Email Address</label>
+              <label className="form-label">{t('login.email', 'Email Address')}</label>
               <input className="form-input" type="email" value={email}
                 onChange={e => setEmail(e.target.value)} placeholder="name@domain.com" autoComplete="email" />
             </div>
 
             <div className="form-group" style={{ position: 'relative', marginBottom: 28 }}>
-              <label className="form-label">Password</label>
+              <label className="form-label">{t('login.password', 'Password')}</label>
               <input className="form-input" type={showPass ? 'text' : 'password'} value={password}
                 onChange={e => setPassword(e.target.value)} placeholder="••••••••"
                 autoComplete="current-password" style={{ paddingRight: 44 }} />
@@ -165,8 +262,8 @@ export default function Login() {
 
             <button type="submit" disabled={loading} className="btn btn-pri btn-full" style={{ fontSize: 15 }}>
               {loading
-                ? <><span className="spinner" style={{ width: 18, height: 18, borderWidth: 2 }} />Authorizing...</>
-                : 'Secure Sign In'}
+                ? <><span className="spinner" style={{ width: 18, height: 18, borderWidth: 2 }} />{t('login.loading', 'Authorizing...')}</>
+                : t('login.submit', 'Secure Sign In')}
             </button>
           </form>
         </div>

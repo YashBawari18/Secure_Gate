@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { visitorsAPI } from '../utils/api';
+import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 
 export default function TrustScore() {
   const [visitors, setVisitors] = useState([]);
   const [loading, setLoading]   = useState(true);
+  const { t } = useTranslation();
 
   useEffect(() => {
     // Fetch all history (no status limit) to calculate true reputation
@@ -44,21 +46,21 @@ export default function TrustScore() {
         // Sort highest trust first
         setVisitors(validTrusts.sort((a,b) => b.trustScore - a.trustScore));
       })
-      .catch(() => toast.error('Failed to load visitor scores'))
+      .catch(() => toast.error(t('trustScore.failLoad', 'Failed to load visitor scores')))
       .finally(() => setLoading(false));
   }, []);
 
   const scoreColor = s => s >= 80 ? 'var(--grn)' : s >= 60 ? 'var(--amb)' : 'var(--red)';
   const scoreBg    = s => s >= 80 ? 'var(--grn-lt)' : s >= 60 ? 'var(--amb-lt)' : 'var(--red-lt)';
-  const scoreLabel = s => s >= 80 ? 'Trusted visitor' : s >= 60 ? 'Building trust' : 'Low trust';
+  const scoreLabel = s => s >= 80 ? t('trustScore.trustedVis', 'Trusted visitor') : s >= 60 ? t('trustScore.buildTrust', 'Building trust') : t('trustScore.lowTrust', 'Low trust');
 
   const tags = (v) => {
-    const t = [];
-    if (v.idVerified)     t.push({ label: 'ID verified',       cls: 'green' });
-    if (v.trustScore >= 80) t.push({ label: 'Trusted',         cls: 'green' });
-    if (v.flagCount > 0)  t.push({ label: `${v.flagCount}× flagged`, cls: 'red' });
-    if (!v.idVerified)    t.push({ label: 'Unverified ID',     cls: 'amber' });
-    return t.slice(0, 2);
+    const tArr = [];
+    if (v.idVerified)     tArr.push({ label: t('trustScore.idVerif', 'ID verified'),       cls: 'green' });
+    if (v.trustScore >= 80) tArr.push({ label: t('trustScore.trusted', 'Trusted'),         cls: 'green' });
+    if (v.flagCount > 0)  tArr.push({ label: `${v.flagCount}× ${t('trustScore.flagged', 'flagged')}`, cls: 'red' });
+    if (!v.idVerified)    tArr.push({ label: t('trustScore.unverifId', 'Unverified ID'),     cls: 'amber' });
+    return tArr.slice(0, 2);
   };
 
   return (
@@ -67,16 +69,15 @@ export default function TrustScore() {
         <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="#2563eb" strokeWidth="1.3">
           <circle cx="6.5" cy="6.5" r="5.5"/><line x1="6.5" y1="4.5" x2="6.5" y2="6.5"/><circle cx="6.5" cy="8.5" r=".5" fill="#2563eb"/>
         </svg>
-        Each visitor builds a trust score (0–100) based on visit history, ID verification, and flag count.
-        Trusted regulars can be pre-approved automatically.
+        {t('trustScore.info', 'Each visitor builds a trust score (0–100) based on visit history, ID verification, and flag count. Trusted regulars can be pre-approved automatically.')}
       </div>
 
       {loading ? (
         <div style={{ textAlign: 'center', padding: 40 }}><div className="spinner" style={{ margin: '0 auto' }} /></div>
       ) : visitors.length === 0 ? (
         <div className="card" style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--tx3)' }}>
-          <div style={{ fontWeight: 500 }}>No visitor trust data yet</div>
-          <div style={{ fontSize: 12, marginTop: 6 }}>Scores appear after visitors have made at least one approved entry</div>
+          <div style={{ fontWeight: 500 }}>{t('trustScore.noData', 'No visitor trust data yet')}</div>
+          <div style={{ fontSize: 12, marginTop: 6 }}>{t('trustScore.scoresAppear', 'Scores appear after visitors have made at least one approved entry')}</div>
         </div>
       ) : (
         <div className="grid3">
@@ -90,7 +91,7 @@ export default function TrustScore() {
                 </div>
                 <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--tx)' }}>{v.name}</div>
                 <div style={{ fontSize: 11, color: 'var(--tx3)', marginBottom: 14 }}>
-                  {v.phone} · Flat {v.flatNumber}
+                  {v.phone} · {t('admin.flat', 'Flat')} {v.flatNumber}
                 </div>
 
                 {/* Score ring */}

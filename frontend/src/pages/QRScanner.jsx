@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { visitorsAPI } from '../utils/api';
 import toast from 'react-hot-toast';
 import Scanner from '../components/Scanner';
+import { useTranslation } from 'react-i18next';
 
 export default function QRScanner() {
   const [otp, setOtp]         = useState(['', '', '', '']);
@@ -9,6 +10,7 @@ export default function QRScanner() {
   const [qrToken, setQrToken] = useState('');
   const [loading, setLoading] = useState(false);
   const [lastResult, setLastResult] = useState(null);
+  const { t } = useTranslation();
 
   const focusNext = (e, idx) => {
     if (e.target.value && idx < 3) {
@@ -24,22 +26,22 @@ export default function QRScanner() {
 
   const handleOTP = async () => {
     const code = otp.join('');
-    if (code.length < 4) return toast.error('Enter full 4-digit OTP');
-    if (!phone)          return toast.error('Enter visitor phone number');
+    if (code.length < 4) return toast.error(t('qrScanner.enterOtp', 'Enter full 4-digit OTP'));
+    if (!phone)          return toast.error(t('qrScanner.enterPhone', 'Enter visitor phone number'));
     setLoading(true);
     try {
       const res = await visitorsAPI.verifyOTP({ otp: code, phone });
       setLastResult({ success: true, visitor: res.data.visitor, method: 'OTP' });
       setOtp(['', '', '', '']); setPhone('');
-      toast.success('OTP verified — entry granted!');
+      toast.success(t('qrScanner.otpGranted', 'OTP verified — entry granted!'));
     } catch (err) {
-      setLastResult({ success: false, message: err.response?.data?.message || 'Verification failed' });
-      toast.error(err.response?.data?.message || 'Invalid OTP');
+      setLastResult({ success: false, message: err.response?.data?.message || t('qrScanner.verifFailed', 'Verification failed') });
+      toast.error(err.response?.data?.message || t('qrScanner.invalidOtp', 'Invalid OTP'));
     } finally { setLoading(false); }
   };
 
   const handleQR = async () => {
-    if (!qrToken) return toast.error('Enter QR token');
+    if (!qrToken) return toast.error(t('qrScanner.enterQr', 'Enter QR token'));
 
     let tokenToVerify = qrToken;
     try {
@@ -52,10 +54,10 @@ export default function QRScanner() {
       const res = await visitorsAPI.verifyQR({ qrToken: tokenToVerify });
       setLastResult({ success: true, visitor: res.data.visitor, method: 'QR' });
       setQrToken('');
-      toast.success('QR verified — entry granted!');
+      toast.success(t('qrScanner.qrGranted', 'QR verified — entry granted!'));
     } catch (err) {
-      setLastResult({ success: false, message: err.response?.data?.message || 'Invalid QR' });
-      toast.error(err.response?.data?.message || 'Invalid QR');
+      setLastResult({ success: false, message: err.response?.data?.message || t('qrScanner.invalidQr', 'Invalid QR') });
+      toast.error(err.response?.data?.message || t('qrScanner.invalidQr', 'Invalid QR'));
     } finally { setLoading(false); }
   };
 
@@ -66,12 +68,12 @@ export default function QRScanner() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <div style={{ width: 8, height: 8, borderRadius: '50%', background: lastResult.success ? 'var(--grn)' : 'var(--red)' }} />
             <div style={{ fontSize: 13, fontWeight: 500, color: lastResult.success ? '#15803d' : '#b91c1c' }}>
-              {lastResult.success ? `${lastResult.method} verified — entry granted for ${lastResult.visitor?.name}` : lastResult.message}
+              {lastResult.success ? `${lastResult.method} ${t('qrScanner.verifiedGranted', 'verified — entry granted for')} ${lastResult.visitor?.name}` : lastResult.message}
             </div>
           </div>
           {lastResult.success && lastResult.visitor && (
             <div style={{ fontSize: 11, color: 'var(--tx2)', marginTop: 6, paddingLeft: 16 }}>
-              Flat {lastResult.visitor.flatNumber} · {lastResult.visitor.purpose}
+              {t('qrScanner.flatLabel', 'Flat')} {lastResult.visitor.flatNumber} · {t(`admin.${lastResult.visitor.purpose}`, lastResult.visitor.purpose)}
             </div>
           )}
         </div>
@@ -80,7 +82,7 @@ export default function QRScanner() {
       <div className="grid2">
         {/* OTP panel */}
         <div className="card">
-          <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 16 }}>OTP verification</div>
+          <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 16 }}>{t('qrScanner.otpPanel', 'OTP verification')}</div>
 
           <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
             {otp.map((d, i) => (
@@ -93,30 +95,30 @@ export default function QRScanner() {
           </div>
 
           <div className="form-group">
-            <label className="form-label">Visitor phone (for lookup)</label>
+            <label className="form-label">{t('qrScanner.visitorPhone', 'Visitor phone (for lookup)')}</label>
             <input className="form-input" value={phone} onChange={e => setPhone(e.target.value)} placeholder="+91 xxxxxxxxxx" />
           </div>
 
           <button className="btn btn-success" style={{ width: '100%', justifyContent: 'center', padding: 10 }}
             onClick={handleOTP} disabled={loading || otp.join('').length < 4}>
-            {loading ? <><span className="spinner" style={{ width: 14, height: 14, borderWidth: 1.5 }} />Verifying...</> : 'Verify OTP & allow entry'}
+            {loading ? <><span className="spinner" style={{ width: 14, height: 14, borderWidth: 1.5 }} />{t('qrScanner.verifying', 'Verifying...')}</> : t('qrScanner.verifyOtpBtn', 'Verify OTP & allow entry')}
           </button>
         </div>
 
         {/* QR panel */}
         <div className="card">
-          <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 14 }}>QR code scan</div>
+          <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 14 }}>{t('qrScanner.qrPanel', 'QR code scan')}</div>
 
           <Scanner onScan={(text) => setQrToken(text)} />
 
           <div className="form-group">
-            <label className="form-label">Or paste QR token manually</label>
-            <input className="form-input" value={qrToken} onChange={e => setQrToken(e.target.value)} placeholder="Paste token from visitor's pass..." />
+            <label className="form-label">{t('qrScanner.orPaste', 'Or paste QR token manually')}</label>
+            <input className="form-input" value={qrToken} onChange={e => setQrToken(e.target.value)} placeholder={t('qrScanner.pasteToken', "Paste token from visitor's pass...")} />
           </div>
 
           <button className="btn btn-success" style={{ width: '100%', justifyContent: 'center', padding: 10 }}
             onClick={handleQR} disabled={loading || !qrToken}>
-            {loading ? <><span className="spinner" style={{ width: 14, height: 14, borderWidth: 1.5 }} />Verifying...</> : 'Verify QR & allow entry'}
+            {loading ? <><span className="spinner" style={{ width: 14, height: 14, borderWidth: 1.5 }} />{t('qrScanner.verifying', 'Verifying...')}</> : t('qrScanner.verifyQrBtn', 'Verify QR & allow entry')}
           </button>
         </div>
       </div>

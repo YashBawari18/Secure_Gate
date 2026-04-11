@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Webcam from 'react-webcam';
 import * as faceapi from '@vladmandic/face-api';
+import { useTranslation } from 'react-i18next';
 
 export default function FaceVerify() {
   const [modelsLoaded, setModelsLoaded] = useState(false);
@@ -10,6 +11,7 @@ export default function FaceVerify() {
   const [matchScore, setMatchScore] = useState(null);
   const [processing, setProcessing] = useState(false);
   const webcamRef = useRef(null);
+  const { t } = useTranslation();
 
   useEffect(() => {
     const loadModels = async () => {
@@ -58,12 +60,12 @@ export default function FaceVerify() {
       const liveDetection = await faceapi.detectSingleFace(liveImg).withFaceLandmarks().withFaceDescriptor();
 
       if (!idDetection) {
-        setMatchScore({ error: 'No face detected in the ID card photo. Please retake.' });
+        setMatchScore({ error: t('faceVerify.noFaceId', 'No face detected in the ID card photo. Please retake.') });
         setProcessing(false);
         return;
       }
       if (!liveDetection) {
-        setMatchScore({ error: 'No face detected in the Live photo. Please retake.' });
+        setMatchScore({ error: t('faceVerify.noFaceLive', 'No face detected in the Live photo. Please retake.') });
         setProcessing(false);
         return;
       }
@@ -84,7 +86,7 @@ export default function FaceVerify() {
       setMatchScore({ percent: pct, distance: distance.toFixed(2), isMatch });
     } catch (err) {
       console.error(err);
-      setMatchScore({ error: 'Computational error during face verification.' });
+      setMatchScore({ error: t('faceVerify.compError', 'Computational error during face verification.') });
     } finally {
       setProcessing(false);
     }
@@ -103,13 +105,13 @@ export default function FaceVerify() {
         <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="#2563eb" strokeWidth="1.3">
           <circle cx="6.5" cy="6.5" r="5.5"/><line x1="6.5" y1="4.5" x2="6.5" y2="6.5"/><circle cx="6.5" cy="8.5" r=".5" fill="#2563eb"/>
         </svg>
-        AI Face Verification: First, capture the visitor's physical ID card. Then, capture their live face.
+        {t('faceVerify.info', "AI Face Verification: First, capture the visitor's physical ID card. Then, capture their live face.")}
       </div>
 
       {!modelsLoaded ? (
         <div style={{ textAlign: 'center', padding: '60px 20px' }}>
           <div className="spinner" style={{ margin: '0 auto 16px' }} />
-          <div style={{ color: 'var(--tx2)', fontSize: 14 }}>Loading AI Models... (this may take a moment)</div>
+          <div style={{ color: 'var(--tx2)', fontSize: 14 }}>{t('faceVerify.loadingModels', 'Loading AI Models... (this may take a moment)')}</div>
         </div>
       ) : (
         <div className="grid2" style={{ gap: 24, alignItems: 'start' }}>
@@ -117,26 +119,26 @@ export default function FaceVerify() {
           <div className="card" style={{ padding: 24 }}>
             {step === 1 && (
               <div>
-                <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 12 }}>Step 1: Capture ID Card</div>
+                <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 12 }}>{t('faceVerify.step1', 'Step 1: Capture ID Card')}</div>
                 <div style={{ borderRadius: 12, overflow: 'hidden', marginBottom: 16, border: '2px solid var(--bdr)' }}>
                   <Webcam audio={false} ref={webcamRef} screenshotFormat="image/jpeg" videoConstraints={{ facingMode: 'environment' }} style={{ width: '100%', display: 'block' }} />
                 </div>
                 <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: 12 }} onClick={() => capture('id')}>
-                  Capture ID Photo
+                  {t('faceVerify.captureIdBtn', 'Capture ID Photo')}
                 </button>
               </div>
             )}
 
             {step === 2 && (
               <div className="fade-in">
-                <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 12 }}>Step 2: Capture Live Face</div>
+                <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 12 }}>{t('faceVerify.step2', 'Step 2: Capture Live Face')}</div>
                 <div style={{ borderRadius: 12, overflow: 'hidden', marginBottom: 16, border: '2px solid var(--pri)' }}>
                   <Webcam audio={false} ref={webcamRef} screenshotFormat="image/jpeg" videoConstraints={{ facingMode: 'environment' }} style={{ width: '100%', display: 'block' }} />
                 </div>
                 <div style={{ display: 'flex', gap: 10 }}>
-                  <button className="btn btn-ghost" style={{ flex: 1, justifyContent: 'center', padding: 12 }} onClick={reset}>Go Back</button>
+                  <button className="btn btn-ghost" style={{ flex: 1, justifyContent: 'center', padding: 12 }} onClick={reset}>{t('faceVerify.goBack', 'Go Back')}</button>
                   <button className="btn btn-success" style={{ flex: 2, justifyContent: 'center', padding: 12 }} onClick={() => capture('live')}>
-                    Capture Live & Verify
+                    {t('faceVerify.captureLiveBtn', 'Capture Live & Verify')}
                   </button>
                 </div>
               </div>
@@ -144,17 +146,17 @@ export default function FaceVerify() {
 
             {step === 3 && (
               <div className="fade-in" style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 20 }}>Verification Results</div>
+                <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 20 }}>{t('faceVerify.resultsTitle', 'Verification Results')}</div>
                 {processing ? (
                   <div style={{ padding: '40px 0' }}>
                     <div className="spinner" style={{ margin: '0 auto 16px' }} />
-                    <div style={{ color: 'var(--tx2)' }}>Analyzing 128-point facial geometry...</div>
+                    <div style={{ color: 'var(--tx2)' }}>{t('faceVerify.analyzing', 'Analyzing 128-point facial geometry...')}</div>
                   </div>
                 ) : matchScore?.error ? (
                   <div style={{ background: 'var(--red-lt)', color: '#b91c1c', padding: 16, borderRadius: 12, border: '1px solid #fca5a5' }}>
-                    <strong>Verification Failed</strong>
+                    <strong>{t('faceVerify.verifFailed', 'Verification Failed')}</strong>
                     <div style={{ marginTop: 8, fontSize: 13 }}>{matchScore.error}</div>
-                    <button className="btn btn-danger" style={{ marginTop: 16, padding: '8px 24px', margin: '16px auto 0' }} onClick={reset}>Try Again</button>
+                    <button className="btn btn-danger" style={{ marginTop: 16, padding: '8px 24px', margin: '16px auto 0' }} onClick={reset}>{t('faceVerify.tryAgain', 'Try Again')}</button>
                   </div>
                 ) : (
                   <div>
@@ -170,13 +172,13 @@ export default function FaceVerify() {
                     </div>
                     
                     {matchScore.isMatch ? (
-                      <div style={{ color: 'var(--grn)', fontWeight: 600, fontSize: 18 }}>Identity Verified</div>
+                      <div style={{ color: 'var(--grn)', fontWeight: 600, fontSize: 18 }}>{t('faceVerify.verified', 'Identity Verified')}</div>
                     ) : (
-                      <div style={{ color: 'var(--red)', fontWeight: 600, fontSize: 18 }}>Mismatch Alert</div>
+                      <div style={{ color: 'var(--red)', fontWeight: 600, fontSize: 18 }}>{t('faceVerify.mismatch', 'Mismatch Alert')}</div>
                     )}
-                    <div style={{ fontSize: 13, color: 'var(--tx3)', marginTop: 4, marginBottom: 24 }}>System confidence (Euclidean dist: {matchScore.distance})</div>
+                    <div style={{ fontSize: 13, color: 'var(--tx3)', marginTop: 4, marginBottom: 24 }}>{t('faceVerify.confidence', 'System confidence (Euclidean dist: ')}{matchScore.distance})</div>
 
-                    <button className="btn btn-primary" style={{ padding: '10px 32px' }} onClick={reset}>Verify Another Person</button>
+                    <button className="btn btn-primary" style={{ padding: '10px 32px' }} onClick={reset}>{t('faceVerify.verifyAnother', 'Verify Another Person')}</button>
                   </div>
                 )}
               </div>
@@ -185,23 +187,23 @@ export default function FaceVerify() {
 
           {/* Reference Photos sidebar */}
           <div className="card" style={{ padding: 16 }}>
-            <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 16, color: 'var(--tx2)' }}>Captured Reference</div>
+            <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 16, color: 'var(--tx2)' }}>{t('faceVerify.reference', 'Captured Reference')}</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div>
-                <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--tx3)', textTransform: 'uppercase', marginBottom: 6 }}>1. ID Card / Baseline</div>
+                <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--tx3)', textTransform: 'uppercase', marginBottom: 6 }}>{t('faceVerify.idBaseline', '1. ID Card / Baseline')}</div>
                 {idPhoto ? (
                   <img src={idPhoto} alt="ID Reference" style={{ width: '100%', borderRadius: 8, border: '1px solid var(--bdr)', opacity: step===1?0.5:1 }} />
                 ) : (
-                  <div style={{ height: 120, background: 'var(--bg3)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--tx3)', fontSize: 12 }}>Waiting for capture...</div>
+                  <div style={{ height: 120, background: 'var(--bg3)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--tx3)', fontSize: 12 }}>{t('faceVerify.waiting', 'Waiting for capture...')}</div>
                 )}
               </div>
               
               <div>
-                <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--tx3)', textTransform: 'uppercase', marginBottom: 6 }}>2. Live Face</div>
+                <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--tx3)', textTransform: 'uppercase', marginBottom: 6 }}>{t('faceVerify.liveFaceObj', '2. Live Face')}</div>
                 {livePhoto ? (
                   <img src={livePhoto} alt="Live Face" style={{ width: '100%', borderRadius: 8, border: '1px solid var(--bdr)' }} />
                 ) : (
-                  <div style={{ height: 120, background: 'var(--bg3)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--tx3)', fontSize: 12 }}>Waiting for capture...</div>
+                  <div style={{ height: 120, background: 'var(--bg3)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--tx3)', fontSize: 12 }}>{t('faceVerify.waiting', 'Waiting for capture...')}</div>
                 )}
               </div>
             </div>

@@ -119,3 +119,10 @@ dist
 
 # Mac OS X hidden files
 .DS_Store
+**/.DS_Store
+
+# React build output (do not commit compiled bundle)
+frontend/build/
+
+# Backend secrets
+backend/.env
