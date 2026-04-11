@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
+import VoiceAlert from './VoiceAlert';
 import toast from 'react-hot-toast';
 
 /* ── Inline SVG icon ── */
@@ -189,6 +190,11 @@ export default function Layout({ children, alertCount = 0, approvalCount = 0 }) 
             <option value="hi">हिंदी</option>
             <option value="mr">मराठी</option>
           </select>
+
+          {/* Voice emergency alert — guard & admin only */}
+          {(user.role === 'guard' || user.role === 'admin') && (
+            <VoiceAlert />
+          )}
 
           {alertCount > 0 && (
             <div onClick={() => navigate(`/${user.role}/alerts`)}
