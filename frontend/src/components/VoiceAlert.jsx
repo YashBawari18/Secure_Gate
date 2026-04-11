@@ -58,10 +58,12 @@ export default function VoiceAlert() {
 
     // ── 2. Start MediaRecorder (actual audio capture) ─────────────────
     chunksRef.current = [];
-    const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
-      ? 'audio/webm;codecs=opus'
-      : 'audio/webm';
-    const mediaRec = new MediaRecorder(stream, { mimeType });
+    const options = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+      ? { mimeType: 'audio/webm;codecs=opus' }
+      : MediaRecorder.isTypeSupported('audio/webm')
+        ? { mimeType: 'audio/webm' }
+        : {}; // Safari fallback
+    const mediaRec = new MediaRecorder(stream, options);
     mediaRec.ondataavailable = (e) => {
       if (e.data.size > 0) chunksRef.current.push(e.data);
     };
@@ -111,8 +113,8 @@ export default function VoiceAlert() {
       // Convert audio blob to base64 to store alongside the alert
       let audioData = null;
       if (chunksRef.current.length > 0) {
-        const mimeType = mediaRecRef.current?.mimeType || 'audio/webm';
-        const blob = new Blob(chunksRef.current, { type: mimeType });
+        const finalMime = mediaRecRef.current?.mimeType || 'audio/mp4';
+        const blob = new Blob(chunksRef.current, { type: finalMime });
         audioData = await blobToBase64(blob);
       }
 
