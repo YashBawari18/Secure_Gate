@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Webcam from 'react-webcam';
 import * as faceapi from '@vladmandic/face-api';
 import { useTranslation } from 'react-i18next';
@@ -10,7 +10,10 @@ export default function FaceVerify() {
   const [livePhoto, setLivePhoto] = useState(null);
   const [matchScore, setMatchScore] = useState(null);
   const [processing, setProcessing] = useState(false);
+  const [faceDetected, setFaceDetected] = useState(false);
   const webcamRef = useRef(null);
+  const canvasRef = useRef(null);
+  const detectionIntervalRef = useRef(null);
   const { t } = useTranslation();
 
   useEffect(() => {
@@ -28,15 +31,70 @@ export default function FaceVerify() {
       }
     };
     loadModels();
+    return () => {
+      if (detectionIntervalRef.current) clearInterval(detectionIntervalRef.current);
+    };
   }, []);
 
+  // Real-time face detection on the live video feed
+  const startFaceDetection = useCallback(() => {
+    if (detectionIntervalRef.current) clearInterval(detectionIntervalRef.current);
+    setFaceDetected(false);
+
+    detectionIntervalRef.current = setInterval(async () => {
+      const video = webcamRef.current?.video;
+      if (!video || video.readyState !== 4) return;
+
+      try {
+        const options = new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.3 });
+        const detection = await faceapi.detectSingleFace(video, options);
+        setFaceDetected(!!detection);
+      } catch (e) {
+        // Silently ignore detection errors during real-time scanning
+      }
+    }, 500);
+  }, []);
+
+  const stopFaceDetection = useCallback(() => {
+    if (detectionIntervalRef.current) {
+      clearInterval(detectionIntervalRef.current);
+      detectionIntervalRef.current = null;
+    }
+    setFaceDetected(false);
+  }, []);
+
+  // Start detection when entering step 2 (live face capture)
+  useEffect(() => {
+    if (step === 2 && modelsLoaded) {
+      // Small delay to allow webcam to initialize
+      const timer = setTimeout(() => startFaceDetection(), 800);
+      return () => { clearTimeout(timer); stopFaceDetection(); };
+    } else {
+      stopFaceDetection();
+    }
+  }, [step, modelsLoaded, startFaceDetection, stopFaceDetection]);
+
+  // Capture a high-quality frame directly from the video element via canvas
+  const captureHighQuality = () => {
+    const video = webcamRef.current?.video;
+    if (!video || video.readyState !== 4) return null;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL('image/png');
+  };
+
   const capture = (type) => {
-    const imageSrc = webcamRef.current?.getScreenshot();
+    const imageSrc = captureHighQuality();
     if (!imageSrc) return;
     if (type === 'id') {
       setIdPhoto(imageSrc);
       setStep(2);
     } else {
+      stopFaceDetection();
       setLivePhoto(imageSrc);
       setStep(3);
       compareFaces(idPhoto, imageSrc);
@@ -44,10 +102,12 @@ export default function FaceVerify() {
   };
 
   const fetchImage = async (base64) => {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       const img = new Image();
+      img.crossOrigin = 'anonymous';
       img.src = base64;
       img.onload = () => resolve(img);
+      img.onerror = (e) => reject(e);
     });
   };
 
@@ -57,19 +117,17 @@ export default function FaceVerify() {
       const idImg = await fetchImage(idSrc);
       const liveImg = await fetchImage(liveSrc);
 
-      // Use a balanced confidence threshold (0.4) to catch ID faces without hallucinating random shapes as faces
-      const ssdOptions = new faceapi.SsdMobilenetv1Options({ minConfidence: 0.4 });
-      const tinyOptions = new faceapi.TinyFaceDetectorOptions({ inputSize: 416, scoreThreshold: 0.4 });
+      const ssdOptions = new faceapi.SsdMobilenetv1Options({ minConfidence: 0.3 });
+      const tinyOptions = new faceapi.TinyFaceDetectorOptions({ inputSize: 416, scoreThreshold: 0.3 });
 
+      // Try SSD first, fallback to TinyFaceDetector
       let idDetection = await faceapi.detectSingleFace(idImg, ssdOptions).withFaceLandmarks().withFaceDescriptor();
       if (!idDetection) {
-        // Fallback to TinyFaceDetector if SSD fails
         idDetection = await faceapi.detectSingleFace(idImg, tinyOptions).withFaceLandmarks().withFaceDescriptor();
       }
 
       let liveDetection = await faceapi.detectSingleFace(liveImg, ssdOptions).withFaceLandmarks().withFaceDescriptor();
       if (!liveDetection) {
-        // Fallback to TinyFaceDetector if SSD fails
         liveDetection = await faceapi.detectSingleFace(liveImg, tinyOptions).withFaceLandmarks().withFaceDescriptor();
       }
 
@@ -84,16 +142,13 @@ export default function FaceVerify() {
         return;
       }
 
-      // 0.0 is an exact match. 0.55 provides a good balance avoiding false positives
       const distance = faceapi.euclideanDistance(idDetection.descriptor, liveDetection.descriptor);
       const isMatch = distance < 0.55;
       
       let pct;
       if (isMatch) {
-         // Map 0.0-0.55 to 80%-100%
          pct = Math.round((1 - (distance / 0.55) * 0.2) * 100);
       } else {
-         // Map >0.55 to 0-60%
          pct = Math.max(0, Math.round((1 - distance) * 100) - 20);
       }
 
@@ -111,6 +166,7 @@ export default function FaceVerify() {
     setIdPhoto(null);
     setLivePhoto(null);
     setMatchScore(null);
+    setFaceDetected(false);
   };
 
   return (
@@ -135,7 +191,7 @@ export default function FaceVerify() {
               <div>
                 <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 12 }}>{t('faceVerify.step1', 'Step 1: Capture ID Card')}</div>
                 <div style={{ borderRadius: 12, overflow: 'hidden', marginBottom: 16, border: '2px solid var(--bdr)' }}>
-                  <Webcam audio={false} ref={webcamRef} screenshotFormat="image/jpeg" videoConstraints={{ facingMode: 'environment', width: 1280, height: 720 }} style={{ width: '100%', display: 'block' }} />
+                  <Webcam audio={false} ref={webcamRef} screenshotFormat="image/png" videoConstraints={{ facingMode: 'environment', width: 1280, height: 720 }} style={{ width: '100%', display: 'block' }} />
                 </div>
                 <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: 12 }} onClick={() => capture('id')}>
                   {t('faceVerify.captureIdBtn', 'Capture ID Photo')}
@@ -146,13 +202,25 @@ export default function FaceVerify() {
             {step === 2 && (
               <div className="fade-in">
                 <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 12 }}>{t('faceVerify.step2', 'Step 2: Capture Live Face')}</div>
-                <div style={{ borderRadius: 12, overflow: 'hidden', marginBottom: 16, border: '2px solid var(--pri)' }}>
-                  <Webcam audio={false} ref={webcamRef} screenshotFormat="image/jpeg" videoConstraints={{ facingMode: 'user', width: 1280, height: 720 }} style={{ width: '100%', display: 'block' }} />
+                <div style={{ borderRadius: 12, overflow: 'hidden', marginBottom: 16, border: `2px solid ${faceDetected ? 'var(--grn)' : 'var(--red)'}`, position: 'relative', transition: 'border-color 0.3s' }}>
+                  <Webcam audio={false} ref={webcamRef} screenshotFormat="image/png" videoConstraints={{ facingMode: 'user', width: 1280, height: 720 }} style={{ width: '100%', display: 'block' }} />
+                  <canvas ref={canvasRef} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none' }} />
+                  {/* Live face detection indicator */}
+                  <div style={{
+                    position: 'absolute', top: 10, left: 10, padding: '4px 12px',
+                    borderRadius: 20, fontSize: 12, fontWeight: 600,
+                    background: faceDetected ? 'rgba(34,197,94,0.9)' : 'rgba(239,68,68,0.9)',
+                    color: '#fff', transition: 'background 0.3s',
+                    display: 'flex', alignItems: 'center', gap: 6
+                  }}>
+                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#fff', display: 'inline-block', animation: faceDetected ? 'none' : 'pulse 1s infinite' }} />
+                    {faceDetected ? t('faceVerify.faceFound', 'Face Detected') : t('faceVerify.noFace', 'No Face — Look at Camera')}
+                  </div>
                 </div>
                 <div style={{ display: 'flex', gap: 10 }}>
                   <button className="btn btn-ghost" style={{ flex: 1, justifyContent: 'center', padding: 12 }} onClick={reset}>{t('faceVerify.goBack', 'Go Back')}</button>
-                  <button className="btn btn-success" style={{ flex: 2, justifyContent: 'center', padding: 12 }} onClick={() => capture('live')}>
-                    {t('faceVerify.captureLiveBtn', 'Capture Live & Verify')}
+                  <button className="btn btn-success" style={{ flex: 2, justifyContent: 'center', padding: 12, opacity: faceDetected ? 1 : 0.5 }} onClick={() => capture('live')} disabled={!faceDetected}>
+                    {faceDetected ? t('faceVerify.captureLiveBtn', 'Capture Live & Verify') : t('faceVerify.waitingForFace', 'Waiting for face...')}
                   </button>
                 </div>
               </div>
