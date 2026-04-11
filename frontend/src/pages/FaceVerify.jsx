@@ -57,9 +57,9 @@ export default function FaceVerify() {
       const idImg = await fetchImage(idSrc);
       const liveImg = await fetchImage(liveSrc);
 
-      // Use extremely low confidence threshold (0.1) for maximum fault-tolerance during demo
-      const ssdOptions = new faceapi.SsdMobilenetv1Options({ minConfidence: 0.1 });
-      const tinyOptions = new faceapi.TinyFaceDetectorOptions({ inputSize: 416, scoreThreshold: 0.1 });
+      // Use a balanced confidence threshold (0.4) to catch ID faces without hallucinating random shapes as faces
+      const ssdOptions = new faceapi.SsdMobilenetv1Options({ minConfidence: 0.4 });
+      const tinyOptions = new faceapi.TinyFaceDetectorOptions({ inputSize: 416, scoreThreshold: 0.4 });
 
       let idDetection = await faceapi.detectSingleFace(idImg, ssdOptions).withFaceLandmarks().withFaceDescriptor();
       if (!idDetection) {
@@ -73,10 +73,14 @@ export default function FaceVerify() {
         liveDetection = await faceapi.detectSingleFace(liveImg, tinyOptions).withFaceLandmarks().withFaceDescriptor();
       }
 
-      // If absolutely no face can be detected, engage demo-failsafe instead of breaking the flow.
-      if (!idDetection || !liveDetection) {
-        console.warn("Extremely poor lighting or no face detected. Engaging demo judging fallback.");
-        setMatchScore({ percent: 94, distance: "0.22", isMatch: true });
+      if (!idDetection) {
+        setMatchScore({ error: t('faceVerify.noFaceId', 'No face detected in the ID card. Please hold it closer to the camera and ensure good lighting.') });
+        setProcessing(false);
+        return;
+      }
+      if (!liveDetection) {
+        setMatchScore({ error: t('faceVerify.noFaceLive', 'No face detected in the Live photo. Please ensure your face is well-lit and fully visible.') });
+        setProcessing(false);
         return;
       }
 
