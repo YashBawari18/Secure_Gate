@@ -25,7 +25,7 @@ app.use(cors({
   origin: process.env.FRONTEND_URL ? process.env.FRONTEND_URL.split(',') : 'http://localhost:3000', 
   credentials: true 
 }));
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 app.use(morgan('dev'));
 
 const limiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 200, message: 'Too many requests' });

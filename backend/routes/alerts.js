@@ -53,10 +53,10 @@ router.patch('/:id/escalate', protect, authorize('admin'), async (req, res) => {
 // POST /api/alerts - manual alert creation
 router.post('/', protect, authorize('guard', 'admin'), async (req, res) => {
   try {
-    const { title, description, severity, type, flatNumber, gateNumber, visitorId } = req.body;
+    const { title, description, severity, type, flatNumber, gateNumber, visitorId, audioData } = req.body;
     const alert = await Alert.create({
       title, description, severity, type, flatNumber, gateNumber,
-      visitorId, reportedBy: req.user._id,
+      visitorId, reportedBy: req.user._id, audioData
     });
     const io = req.app.get('io');
     if (io) io.to('admins').emit('new_alert', { alert });

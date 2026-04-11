@@ -14,9 +14,10 @@ const alertSchema = new mongoose.Schema({
   reportedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   flatNumber: { type: String },
   gateNumber: { type: String },
+  audioData:  { type: String },   // base64 audio for voice_emergency alerts
   resolvedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   resolvedAt: { type: Date },
-  createdAt: { type: Date, default: Date.now },
+  createdAt:  { type: Date, default: Date.now },
 });
 
 module.exports = mongoose.model('Alert', alertSchema);

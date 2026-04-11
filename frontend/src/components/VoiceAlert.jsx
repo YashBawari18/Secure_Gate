@@ -3,24 +3,36 @@ import { alertsAPI } from '../utils/api';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 
-// Map i18n language codes → SpeechRecognition lang codes
 const LANG_MAP = { en: 'en-IN', hi: 'hi-IN', mr: 'mr-IN' };
+
+// Convert a Blob to base64 data URL
+const blobToBase64 = (blob) =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload  = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
 
 export default function VoiceAlert() {
   const { t, i18n } = useTranslation();
-  const [listening, setListening]   = useState(false);
+  const [listening,  setListening]  = useState(false);
   const [transcript, setTranscript] = useState('');
-  const [sending, setSending]       = useState(false);
-  const [showPanel, setShowPanel]   = useState(false);
-  const recogRef = useRef(null);
-  const panelRef = useRef(null);
+  const [audioUrl,   setAudioUrl]   = useState(null); // local preview URL
+  const [sending,    setSending]    = useState(false);
+  const [showPanel,  setShowPanel]  = useState(false);
+
+  const recogRef    = useRef(null);
+  const mediaRecRef = useRef(null);
+  const chunksRef   = useRef([]);
+  const panelRef    = useRef(null);
 
   // Close panel on outside click
   useEffect(() => {
     if (!showPanel) return;
     const handler = (e) => {
       if (panelRef.current && !panelRef.current.contains(e.target)) {
-        stopListening();
+        stopAll();
         setShowPanel(false);
       }
     };
@@ -28,44 +40,67 @@ export default function VoiceAlert() {
     return () => document.removeEventListener('mousedown', handler);
   }, [showPanel]);
 
-  const startListening = () => {
+  const startListening = async () => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      toast.error('Voice recognition not supported in this browser. Use Chrome.');
+      toast.error('Voice recognition not supported. Use Chrome.');
       return;
     }
 
-    const recog = new SpeechRecognition();
-    recog.continuous      = true;
-    recog.interimResults  = true;
-    recog.lang            = LANG_MAP[i18n.language] || 'hi-IN';
+    // ── 1. Request microphone ──────────────────────────────────────────
+    let stream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch {
+      toast.error('Microphone access denied.');
+      return;
+    }
 
+    // ── 2. Start MediaRecorder (actual audio capture) ─────────────────
+    chunksRef.current = [];
+    const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+      ? 'audio/webm;codecs=opus'
+      : 'audio/webm';
+    const mediaRec = new MediaRecorder(stream, { mimeType });
+    mediaRec.ondataavailable = (e) => {
+      if (e.data.size > 0) chunksRef.current.push(e.data);
+    };
+    mediaRec.onstop = () => {
+      const blob = new Blob(chunksRef.current, { type: mimeType });
+      setAudioUrl(URL.createObjectURL(blob)); // local preview
+      stream.getTracks().forEach(tr => tr.stop()); // release mic
+    };
+    mediaRec.start(100); // collect data every 100ms
+    mediaRecRef.current = mediaRec;
+
+    // ── 3. Start SpeechRecognition (transcription) ────────────────────
+    const recog = new SpeechRecognition();
+    recog.continuous     = true;
+    recog.interimResults = true;
+    recog.lang           = LANG_MAP[i18n.language] || 'hi-IN';
     recog.onresult = (e) => {
       let full = '';
-      for (let i = 0; i < e.results.length; i++) {
-        full += e.results[i][0].transcript;
-      }
+      for (let i = 0; i < e.results.length; i++) full += e.results[i][0].transcript;
       setTranscript(full);
     };
-    recog.onerror = (e) => {
-      toast.error(`Mic error: ${e.error}`);
-      setListening(false);
-    };
-    recog.onend = () => setListening(false);
-
+    recog.onerror = (e) => toast.error(`Mic error: ${e.error}`);
+    recog.onend   = () => setListening(false);
     recog.start();
     recogRef.current = recog;
+
     setListening(true);
     setTranscript('');
+    setAudioUrl(null);
   };
 
-  const stopListening = () => {
+  const stopAll = () => {
     recogRef.current?.stop();
+    if (mediaRecRef.current?.state === 'recording') mediaRecRef.current.stop();
     setListening(false);
   };
 
   const toggleMic = () => {
-    if (listening) stopListening();
+    if (listening) stopAll();
     else           startListening();
   };
 
@@ -73,15 +108,27 @@ export default function VoiceAlert() {
     if (!transcript.trim()) return toast.error('No voice message recorded.');
     setSending(true);
     try {
+      // Convert audio blob to base64 to store alongside the alert
+      let audioData = null;
+      if (chunksRef.current.length > 0) {
+        const mimeType = mediaRecRef.current?.mimeType || 'audio/webm';
+        const blob = new Blob(chunksRef.current, { type: mimeType });
+        audioData = await blobToBase64(blob);
+      }
+
       await alertsAPI.create({
         title: '🎙️ Voice Emergency Alert',
         description: transcript.trim(),
         severity: 'high',
         type: 'voice_emergency',
         flatNumber: '',
+        audioData,          // base64 audio included
       });
+
       toast.success('🚨 Emergency alert broadcasted!', { duration: 4000 });
       setTranscript('');
+      setAudioUrl(null);
+      chunksRef.current = [];
       setShowPanel(false);
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to broadcast');
@@ -91,37 +138,33 @@ export default function VoiceAlert() {
   };
 
   const discard = () => {
-    stopListening();
+    stopAll();
     setTranscript('');
+    setAudioUrl(null);
+    chunksRef.current = [];
     setShowPanel(false);
   };
 
   return (
     <div ref={panelRef} style={{ position: 'relative', zIndex: 1000 }}>
 
-      {/* Mic trigger button */}
+      {/* ── Mic trigger button ── */}
       <button
         onClick={() => setShowPanel(p => !p)}
         title="Voice Emergency Alert"
         style={{
-          width: 38, height: 38,
-          borderRadius: '50%',
+          width: 38, height: 38, borderRadius: '50%',
           border: listening ? '2px solid var(--red)' : '2px solid transparent',
-          background: listening
-            ? 'var(--red)'
-            : showPanel ? 'var(--red-lt)' : 'var(--bg3)',
+          background: listening ? 'var(--red)' : showPanel ? 'var(--red-lt)' : 'var(--bg3)',
           color: listening ? '#fff' : 'var(--red)',
           cursor: 'pointer',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           transition: 'all 0.2s ease',
-          boxShadow: listening
-            ? '0 0 0 6px rgba(239,68,68,0.2)'
-            : '0 2px 8px rgba(0,0,0,0.08)',
+          boxShadow: listening ? '0 0 0 6px rgba(239,68,68,0.2)' : '0 2px 8px rgba(0,0,0,0.08)',
           animation: listening ? 'pulse 1.2s ease-in-out infinite' : 'none',
           flexShrink: 0,
         }}
       >
-        {/* Mic SVG */}
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
           stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <rect x="9" y="2" width="6" height="12" rx="3"/>
@@ -131,17 +174,14 @@ export default function VoiceAlert() {
         </svg>
       </button>
 
-      {/* Dropdown panel */}
+      {/* ── Dropdown panel ── */}
       {showPanel && (
         <div style={{
           position: 'absolute', top: 'calc(100% + 10px)', right: 0,
-          width: 320,
-          background: 'var(--bg2)',
-          border: '1px solid var(--bdr)',
-          borderRadius: 16,
+          width: 320, background: 'var(--bg2)',
+          border: '1px solid var(--bdr)', borderRadius: 16,
           boxShadow: '0 16px 48px rgba(0,0,0,0.14)',
-          overflow: 'hidden',
-          animation: 'fadeIn 0.15s ease',
+          overflow: 'hidden', animation: 'fadeIn 0.15s ease',
         }}>
 
           {/* Header */}
@@ -150,11 +190,9 @@ export default function VoiceAlert() {
             background: 'linear-gradient(135deg, #dc2626, #b91c1c)',
             color: '#fff',
           }}>
-            <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: '-0.01em' }}>
-              🚨 Voice Emergency Alert
-            </div>
+            <div style={{ fontSize: 13, fontWeight: 700 }}>🚨 Voice Emergency Alert</div>
             <div style={{ fontSize: 11, opacity: 0.8, marginTop: 2 }}>
-              Speak in Hindi, Marathi or English — auto-broadcast to all stations
+              Speak in Hindi, Marathi or English — audio + text broadcasted
             </div>
           </div>
 
@@ -188,42 +226,54 @@ export default function VoiceAlert() {
 
               <div>
                 <div style={{ fontSize: 13, fontWeight: 600, color: listening ? 'var(--red)' : 'var(--tx)' }}>
-                  {listening ? '● Recording...' : transcript ? 'Recording stopped' : 'Press to start'}
+                  {listening ? '● Recording...' : audioUrl ? '✓ Audio captured' : 'Press to start'}
                 </div>
                 <div style={{ fontSize: 11, color: 'var(--tx3)', marginTop: 2 }}>
                   {listening
-                    ? `Listening in ${LANG_MAP[i18n.language] || 'hi-IN'}`
-                    : 'Tap mic and speak your emergency'}
+                    ? `Recording audio + text in ${LANG_MAP[i18n.language] || 'hi-IN'}`
+                    : audioUrl ? 'Preview below · tap to re-record' : 'Tap mic and speak your emergency'}
                 </div>
               </div>
             </div>
 
             {/* Transcript box */}
             <div style={{
-              minHeight: 72,
-              background: 'var(--bg3)',
+              minHeight: 60, background: 'var(--bg3)',
               border: `1.5px solid ${listening ? 'var(--red)' : 'var(--bdr)'}`,
-              borderRadius: 10,
-              padding: 12,
-              fontSize: 13,
+              borderRadius: 10, padding: 12, fontSize: 13,
               color: transcript ? 'var(--tx)' : 'var(--tx3)',
-              lineHeight: 1.6,
-              marginBottom: 14,
-              transition: 'border-color 0.2s',
+              lineHeight: 1.6, marginBottom: 10,
               fontStyle: transcript ? 'normal' : 'italic',
-              wordBreak: 'break-word',
-              position: 'relative',
+              wordBreak: 'break-word', transition: 'border-color 0.2s',
             }}>
               {transcript || 'Your message will appear here as you speak...'}
               {listening && (
                 <span style={{
                   display: 'inline-block', width: 6, height: 14,
                   background: 'var(--red)', borderRadius: 2, marginLeft: 4,
-                  verticalAlign: 'middle',
-                  animation: 'pulse 0.8s ease-in-out infinite',
+                  verticalAlign: 'middle', animation: 'pulse 0.8s ease-in-out infinite',
                 }}/>
               )}
             </div>
+
+            {/* Audio preview player */}
+            {audioUrl && !listening && (
+              <div style={{
+                marginBottom: 14, padding: '10px 12px',
+                background: '#f0fdf4', border: '1px solid #86efac',
+                borderRadius: 10,
+              }}>
+                <div style={{ fontSize: 11, color: '#166534', fontWeight: 600, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#166534" strokeWidth="2.5" strokeLinecap="round"><polyline points="20,6 9,17 4,12"/></svg>
+                  Audio captured — preview before sending:
+                </div>
+                <audio
+                  src={audioUrl}
+                  controls
+                  style={{ width: '100%', height: 32, outline: 'none' }}
+                />
+              </div>
+            )}
 
             {/* Actions */}
             <div style={{ display: 'flex', gap: 8 }}>
@@ -237,24 +287,19 @@ export default function VoiceAlert() {
                   ? <><span className="spinner" style={{ width: 13, height: 13, borderWidth: 1.5, borderColor: '#fff3', borderTopColor: '#fff' }} /> Sending...</>
                   : '🚨 Broadcast Alert'}
               </button>
-              <button
-                onClick={discard}
-                className="btn btn-ghost"
-                style={{ padding: '9px 14px', fontSize: 13 }}
-              >
+              <button onClick={discard} className="btn btn-ghost" style={{ padding: '9px 14px', fontSize: 13 }}>
                 Discard
               </button>
             </div>
 
-            {/* Info tip */}
+            {/* Tip */}
             <div style={{
               marginTop: 12, fontSize: 11, color: 'var(--tx3)',
               background: 'var(--bg3)', borderRadius: 8, padding: '8px 10px',
-              display: 'flex', gap: 6, alignItems: 'flex-start',
+              display: 'flex', gap: 6,
             }}>
               <span>💡</span>
-              <span>Say things like <em>"Gate ke andar chor ghus gaya"</em> or
-              <em> "Fire in Block B"</em>. Stop recording before broadcasting.</span>
+              <span>Say things like <em>"Gate ke andar chor ghus gaya"</em> or <em>"Fire in Block B"</em>. Stop recording before broadcasting.</span>
             </div>
           </div>
         </div>

@@ -121,6 +121,12 @@ export default function Alerts() {
                   </span>
                 </div>
                 <div style={{ fontSize:12, color:'var(--tx2)', marginBottom:8, lineHeight:1.6 }}>{a.description}</div>
+                {a.audioData && (
+                  <div style={{ marginBottom: 12, padding: '8px 12px', background: 'var(--bg)', borderRadius: 8, border: '1px solid var(--bdr)' }}>
+                    <div style={{ fontSize: 11, fontWeight: 500, color: 'var(--tx2)', marginBottom: 6 }}>Voice Emergency Broadcast:</div>
+                    <audio src={a.audioData} controls style={{ width: '100%', height: 32, outline: 'none' }} />
+                  </div>
+                )}
                 {a.visitorId && (
                   <div style={{ fontSize:11, color:'var(--tx3)', marginBottom:8 }}>
                     {t('alerts.visitor', 'Visitor:')} {a.visitorId.name}
